@@ -4,6 +4,7 @@ Big Data Projekt Frame
 """
 
 from PIL import Image
+from tqdm import tqdm
 import os
 
 """Database"""
@@ -26,14 +27,33 @@ def Path_generator():#directory = "path/to/directory"):
             yield Image.open(os.path.join(directory, filename))
 
 def Get_color_scheme(vectors):
-    color_scheme = []
+    color_scheme1 = []
+    count_scheme1 = []
+    color_scheme2 = []
+    count_scheme2 = []
+    
     # drop doubles
-    for rgb in vectors:
-        if rgb not in color_scheme:
-            color_scheme.append(rgb)
-        # 20 fache verkleinerung.
-        # fragen ob in 5er schritten um noch kleiner zu bekommen
-    return color_scheme
+    for rgb in tqdm(vectors):
+        if rgb not in color_scheme1:
+            color_scheme1.append(rgb)
+            count_scheme1.append(1)
+        else:
+            count_scheme1[color_scheme1.index(rgb)] += 1
+    for rgb in tqdm(color_scheme1):
+        count_value = count_scheme1[color_scheme1.index(rgb)]
+        converted_rgb = []
+        for value in rgb:
+            val_rest = value % 5
+            if val_rest >= 3:
+                converted_rgb.append(value + (5 - val_rest)) 
+            else:
+                converted_rgb.append(value - val_rest)
+        if converted_rgb not in color_scheme2:
+            color_scheme2.append(converted_rgb)
+            count_scheme2.append(count_value)
+        else:
+            count_scheme2[color_scheme2.index(converted_rgb)] += count_value
+    return color_scheme2, count_scheme2
 
 def GoogleAPI():
     pass
@@ -72,8 +92,7 @@ def Full_Preperation():
     # Open the image file
     for image in image_generator:
         vectors = Image_to_rgb(image)
-        color_scheme = Get_color_scheme(vectors)
-        break
+        color_scheme, count_scheme = Get_color_scheme(vectors)
     
 
 """Code"""
@@ -91,4 +110,3 @@ def Predict():
 
 def Output():
     pass
-
