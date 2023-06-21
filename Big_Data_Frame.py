@@ -4,6 +4,7 @@ Big Data Projekt Frame
 """
 from PIL import Image
 import numpy as np
+import pandas as pd
 from tqdm import tqdm
 import os
 import pandas as pd
@@ -98,20 +99,8 @@ def Image_to_rgb_scheme(image):
     
     # Get the width and height of the image
     width, height = image.size
-    
-    # Create an empty list to store the vectors
-    vectors = []
-    
-    # Loop through each pixel in the image
-    for x in range(width):
-        for y in range(height):
-            # Get the RGB values of the pixel
-            r, g, b = image.getpixel((x, y))
-            # Append the RGB values to the list as a vector
-            vectors.append([r, g, b])
-    
-    # return the list of vectors
-    return vectors
+    im = np.array(image)
+    return im
 
 def Image_to_rgb_image(image, image_id):
     # Convert the image to RGB mode if it's not already in RGB mode
@@ -172,9 +161,6 @@ def Full_Preperation():
         Image_to_rgb_image(image, image_id)
         print(400*400)
         
-        print("done next")
-        break
-
 """Code"""
 def Input():
     pass
