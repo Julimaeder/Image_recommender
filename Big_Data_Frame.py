@@ -1,4 +1,5 @@
 from PIL import Image, ImageFile
+from tqdm import tqdm
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -260,63 +261,71 @@ def KNN_API():
 
 def Full_Prediction():
     
-    data = pd.DataFrame(columns=("name", "place", "e", "ec"))
     image_generator = Path_generator(predictPath)
+    #data = pd.DataFrame(columns=("name", "place", "e", "ec"))
     for image_path in image_generator:
+        endlist = pd.DataFrame(columns=("e", "ec"))
         image_name = os.path.split(image_path)[-1]
 
         image = Image.open(image_path)
         img_plot = plt.imshow(image)
+        plt.title("AEhnliche Bilder")
         plt.axis('off')  # Turn off the axis
         plt.pause(1)
         schemes = predictschemes_gen(image)
         #predictembeddings_gen(image)
         #predictlabels_gen(image)
-        endlist = []
         valmin = 1000000
-        for id, val in schemes:
-            endlist.append(val)
+        for id, val in tqdm(schemes, total=6852):
+            # Insert data into the DataFrame
+            endlist.loc[len(endlist)] = {"e": id, "ec": val}
             if val < valmin:
+                valmin = val
+                #print(val)
                 newpath = ReadPathbyID(id)
                 new_image = mpimg.imread(newpath)
                 img_plot.set_data(new_image)
                 plt.show(block=False)
                 #plt.draw()
-                plt.pause(0.05)
-        #  IDs und Werte der fünf kleinsten e-Werte
-        smallest_e = sorted(enumerate(endlist), key=lambda x: x[1])[:5]
-        e_data = pd.DataFrame([(image_name, place, value, int(idx)) for place, (idx, value) in enumerate(smallest_e, 1)], columns=["name", "place", "e", "ec"])
-        data = pd.concat([data, e_data], ignore_index=True)
-        print(e_data["ec"])
+                plt.pause(0.01)
+        #  IDs und Werte der fünf kleinsten ec-Werte
+                
+        smallest_values = endlist.nsmallest(5, "ec")
+
+        # Print the resulting DataFrame
+        print(smallest_values)
+        
+
+        #print(e_data["ec"])
 
         fig, axes = plt.subplots(1, 6, figsize=(15, 3))
         
         endimage = Image.open(image_path)
         axes[0].imshow(endimage)
         axes[0].axis('off')
-        for i, endid in enumerate(e_data["ec"]):
+        c = 0
+        for endid in smallest_values["e"]:
             print(endid)
-            image_path = ReadPathbyID(endid)
-            print(image_path)
-            endimage = Image.open(image_path)
-            axes[i+1].imshow(endimage)
-            axes[i+1].axis('off')
+            imagepath = ReadPathbyID(endid)
+            endimage = Image.open(imagepath)
+            axes[c+1].imshow(endimage)
+            axes[c+1].axis('off')
+            c+=1
 
         # Adjust the spacing between subplots
         plt.tight_layout()
 
         # Display the plot
-        plt.show()
+        plt.show(block=False)
+        plt.pause(20)
+        plt.close('all')
 
-
-def Output():
-    pass
 
 
 
 print("Start")
-Full_Preperation()
-#Full_Prediction()
+#Full_Preperation()
+Full_Prediction()
 print("end")
 mycursor.close()
 mydb.close()
