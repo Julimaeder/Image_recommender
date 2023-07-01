@@ -1,60 +1,73 @@
-# -*- coding: utf-8 -*-
-"""
-Big Data Projekt Frame
-"""
-from PIL import Image
+from PIL import Image, ImageFile
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
-import mysql.connector
-from scipy.sparse import lil_matrix
+import matplotlib.image as mpimg
+import sqlite3
+#from sqlalchemy import create_engine
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
+sqlPath = "../databases/my_database.db"
+imagesPath = "D:\\Ablage\\weather_image_recognition"
+predictPath = "D:\\Ablage\\predict"
 
-mydb = mysql.connector.connect(
-  host="localhost",
-  user="root",
-  password="Informatiker1",
-  autocommit=True
-)
+mydb = sqlite3.connect(sqlPath)
+mycursor = mydb.cursor()
 
-mycursor = mydb.cursor(buffered=True)
 
 
 """Database"""
-def CreateDatabase():
-    #just execute it if the Database isn't implemented
-    mycursor.execute("create database bigData")
-    mycursor.execute("use bigData")
-    mycursor.execute("create table images(iID int primary key not null, ipath varchar(120) unique)")
-    mycursor.execute("create table embeddings(eID int, erow int(100), ecol int(100), r int(3), g int(3), b int(3), primary key(eID, erow, ecol), foreign key (eID) references images(iID))")
-    mycursor.execute("create table schemes(sID int, r int(3), g int(3), b int(3), amount int(10), primary key(sID, r, g, b), foreign key (sID) references images(iID))")
-    mycursor.execute("create table schemes_distances(ID1 int, ID2 int, Euclidean double, Manhattan double, Cosine double, Jaccard double, Hamming double, primary key(ID1, ID2), foreign key (sID1) references images(iID), foreign key (sID2) references images(iID))")
-    mydb.commit()
+# def CreateDatabase():
+#     #just execute it if the Database isn't implemented
+#     mycursor.execute("create table images(iID int primary key not null, ipath varchar(120) unique);")
+#     mydb.commit()
+#     mycursor.execute("create table embeddings(eID int, erow int(100), ecol int(100), r int(3), g int(3), b int(3), primary key(eID, erow, ecol), foreign key (eID) references images(iID))")
+#     mydb.commit()
+#     mycursor.execute("create table schemes(sID int, r int(3), g int(3), b int(3), amount int(10), primary key(sID, r, g, b), foreign key (sID) references images(iID))")
+#     mydb.commit()
+#     mycursor.execute("create table schemes_distances(ID1 int, ID2 int, Euclidean double, Manhattan double, Cosine double, Jaccard double, Hamming double, primary key(ID1, ID2), foreign key (ID1) references images(iID), foreign key (ID2) references images(iID))")
+#     mydb.commit()
 
-def LoadDatabase():
-    #just execute it if the Database isn't implemented
-    mycursor.execute("use bigData")
+def CreateDatabase():
+    # just execute it if the Database isn't implemented
+    mycursor.execute("CREATE TABLE IF NOT EXISTS images(iID INT PRIMARY KEY NOT NULL, ipath VARCHAR(120) UNIQUE);")
+    mydb.commit()
+    #mycursor.execute("CREATE TABLE IF NOT EXISTS embeddings(eID INT, erow INT, ecol INT, r INT, g INT, b INT, PRIMARY KEY(eID, erow, ecol), FOREIGN KEY (eID) REFERENCES images(iID));")
+    #mydb.commit()
+    mycursor.execute("CREATE TABLE IF NOT EXISTS schemes(sID INT, r INT, g INT, b INT, amount INT, PRIMARY KEY(sID, r, g, b), FOREIGN KEY (sID) REFERENCES images(iID));")
+    mydb.commit()
+    
+
 
 def CheckDatabase():
-    #just execute it if the Database isn't implemented
-    #mycursor.execute(
-    sql_query = "SELECT IF(EXISTS (SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = 'bigData'), TRUE, FALSE) AS database_exists"
+    # check if the Database is implemented
+    sql_query = f'SELECT name FROM sqlite_master WHERE name="schemes_distances"'
     result = pd.read_sql(sql_query, con=mydb)
-    #print(str(result["database_exists"].item()))
-    if str(result["database_exists"].item()) != "0":
-        LoadDatabase()
-    else:
+    if len(result['name']) == 0:
         CreateDatabase()
     print("connected")
+
+
+CheckDatabase()
+
+#engine = create_engine('mysql+mysqldb://bigData:Informatiker1@localhost/root', echo = False)
 
 def ReadIDbyPath(path):
     sql_query = f'SELECT iID FROM images where ipath="{path}"'
     result = pd.read_sql(sql_query, con=mydb)
     if len(result["iID"]) > 0:
         return int(result["iID"].item())
+    else:
+        return None
+    
+def ReadPathbyID(id):
+    sql_query = f'SELECT ipath FROM images where iID="{id}"'
+    result = pd.read_sql(sql_query, con=mydb)
+    if len(result["ipath"]) > 0:
+        return result["ipath"].item()
     else:
         return None
     
@@ -83,15 +96,15 @@ def imageMaxID():
         return None
 
 def writeImage(id,path):
-    mycursor.execute(f'insert into images values({id}, "{path}") ON DUPLICATE KEY UPDATE ipath="{path}"')
+    mycursor.execute(f'insert into images values({id}, "{path}")')
     mydb.commit()
 
 def writePixels(id,row,col,r,g,b):
-    mycursor.execute(f'insert into embeddings values({id}, {row}, {col}, {r}, {g}, {b}) ON DUPLICATE KEY UPDATE r={r}, g={g}, r={b}')
+    mycursor.execute(f'insert into embeddings values({id}, {row}, {col}, {r}, {g}, {b})')
     mydb.commit()
 
 def writeSchemes(id,r,g,b,amount):
-    mycursor.execute(f'insert into schemes values({id}, {r}, {g}, {b}, {amount}) ON DUPLICATE KEY UPDATE amount={amount}')
+    mycursor.execute(f'insert into schemes values({id}, {r}, {g}, {b}, {amount})')
     mydb.commit()
 
 def writeDistances(id1,id2,e,m,c,j,h):
@@ -100,8 +113,8 @@ def writeDistances(id1,id2,e,m,c,j,h):
     mydb.commit()
 
 """Preperation"""
-def Path_generator():#directory = "path/to/directory"):
-    directory = "D:\\Ablage\\weather_image_recognition"
+def Path_generator(ipath):#directory = "path/to/directory"):
+    directory = ipath
     for root, dirs, files in os.walk(directory):
         for filename in files:
             # Check if the file is an image file
@@ -147,8 +160,8 @@ def Image_to_rgb_image(image, image_id):
             r, g, b = image.getpixel((x, y))
             # Append the RGB values to the list as a vector
             # korrekturbedarf
-            print(image_id, x, y, r, g, b)
-            writePixels(image_id, x, y, r, g, b)
+            #print(image_id, x, y, r, g, b)
+            #writePixels(image_id, x, y, r, g, b)
 
 def PreparationCNN():
     pass
@@ -158,7 +171,7 @@ def CNN():
 
 def Full_Preperation():
     # Loop through each file in the directory
-    image_generator = Path_generator()
+    image_generator = Path_generator(imagesPath)
 
     maxID = imageMaxID()
     counter = 0
@@ -173,49 +186,70 @@ def Full_Preperation():
 
 
         image_id = ReadIDbyPath(image_path)
-        print(counter, image_id, image_path)
         if image_id is None:
             counter += 1
 
             writeImage(counter, image_path)
-            image = Image.open(image_path)
-            vectors = Image_to_rgb_scheme(image)
+            try:
+                image = Image.open(image_path)
+                vectors = Image_to_rgb_scheme(image)
 
-            print(vectors)
+                color_scheme, count_scheme = Get_color_scheme(vectors)
+                
+                df = pd.DataFrame({
+                    'sID': counter,
+                    'r': [cols[0] for cols in color_scheme],
+                    'g': [cols[1] for cols in color_scheme],
+                    'b': [cols[2] for cols in color_scheme],
+                    'amount': count_scheme
+                })
+                print(counter, color_scheme.shape, len(count_scheme))
+                
+                #print("\n", [cols for cols in count_scheme])
 
-            color_scheme, count_scheme = Get_color_scheme(vectors)
-            #color_schemenp, count_schemenp = get_color_scheme_numpy(vectors)
-            #print(color_scheme, count_scheme)
-            for cols, couns in zip(color_scheme, count_scheme):
-                #print(counter, cols[0], cols[1], cols[2], couns)
-                writeSchemes(counter, cols[0], cols[1], cols[2], couns)
-            print("\n", counter)
+                # Insert the data into the database
+                df.to_sql(name='schemes', con=mydb, if_exists='append',index = False, chunksize = 1000)
+            except:
+                print("continue")
             #print(color_scheme, "\n", count_scheme)
         #print(len(vectors))
         #image = image.resize((400,400))
         #Image_to_rgb_image(image, image_id)
         #print(400*400)
-        
+
+def predictschemes_gen(image):
+    vectors = Image_to_rgb_scheme(image)
+
+    color_scheme, count_scheme = Get_color_scheme(vectors)
+    np_i = np.zeros((18, 18, 18))
+    for [r, g, b], a in zip(color_scheme, count_scheme):
+        np_i[int(r/15)][int(g/15)][int(b/15)] = int(a)
+    np_i = np_i.reshape(-1)
+    #print(color_scheme.shape, len(count_scheme))
+    ids = ReadALLID()
+    for j in ids:
+        df_j = ReadSchemesbyID(j)
+        if df_j is not None:
+            np_j = np.zeros((18, 18, 18))
+            for x , [r, g, b, a] in df_j.iterrows():
+                np_j[int(r/15)][int(g/15)][int(b/15)] = int(a)
+            #print(i,j)
+            np_j = np_j.reshape(-1)
+            e = Distances(j, np_i,np_j)
+            yield j, e 
+
+    
 """Code"""
 def Input():
     pass
 
-def Distances(id1, id2, la,lb):
+def Distances(id, la,lb):
     a = np.array(la)
     b = np.array(lb)
 
     euclidean = np.linalg.norm(a - b)
-    manhatten = np.sum(np.abs(a - b))
-    cosine = np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
     
-    intersection = np.sum(np.minimum(a, b))
-    union = np.sum(np.maximum(a, b))
-    similarity = intersection / union
-
-    #hamming = np.count_nonzero(a ^ b)
-    hamming = 0
-
-    writeDistances(id1,id2,euclidean,manhatten,cosine,similarity, hamming)
+    return euclidean
 
 
 def KNN_color_scheme():
@@ -225,40 +259,64 @@ def KNN_API():
     pass
 
 def Full_Prediction():
-    ids = ReadALLID()
-    for i in ids:
-        for j in ids:
-            if i != j:
-                df_i = ReadSchemesbyID(i)
-                df_j = ReadSchemesbyID(j)
-                list_i = np.zeros((18, 18, 18))
-                list_j = np.zeros((18, 18, 18))
-                for x , [r, g, b, a] in df_i.iterrows():
-                    list_i[int(r/15)][int(g/15)][int(b/15)] = int(a)
-                for x , [r, g, b, a] in df_j.iterrows():
-                    list_j[int(r/15)][int(g/15)][int(b/15)] = int(a)
-                print(i,j)
-                list_i = list_i.reshape(-1)
-                list_j = list_j.reshape(-1)
-                Distances(i, j, list_i,list_j)
-                #print(df_i, df_j)
+    
+    data = pd.DataFrame(columns=("name", "place", "e", "ec"))
+    image_generator = Path_generator(predictPath)
+    for image_path in image_generator:
+        image_name = os.path.split(image_path)[-1]
+
+        image = Image.open(image_path)
+        img_plot = plt.imshow(image)
+        plt.axis('off')  # Turn off the axis
+        plt.pause(1)
+        schemes = predictschemes_gen(image)
+        #predictembeddings_gen(image)
+        #predictlabels_gen(image)
+        endlist = []
+        valmin = 1000000
+        for id, val in schemes:
+            endlist.append(val)
+            if val < valmin:
+                newpath = ReadPathbyID(id)
+                new_image = mpimg.imread(newpath)
+                img_plot.set_data(new_image)
+                plt.show(block=False)
+                #plt.draw()
+                plt.pause(0.05)
+        #  IDs und Werte der fünf kleinsten e-Werte
+        smallest_e = sorted(enumerate(endlist), key=lambda x: x[1])[:5]
+        e_data = pd.DataFrame([(image_name, place, value, int(idx)) for place, (idx, value) in enumerate(smallest_e, 1)], columns=["name", "place", "e", "ec"])
+        data = pd.concat([data, e_data], ignore_index=True)
+        print(e_data["ec"])
+
+        fig, axes = plt.subplots(1, 6, figsize=(15, 3))
+        
+        endimage = Image.open(image_path)
+        axes[0].imshow(endimage)
+        axes[0].axis('off')
+        for i, endid in enumerate(e_data["ec"]):
+            print(endid)
+            image_path = ReadPathbyID(endid)
+            print(image_path)
+            endimage = Image.open(image_path)
+            axes[i+1].imshow(endimage)
+            axes[i+1].axis('off')
+
+        # Adjust the spacing between subplots
+        plt.tight_layout()
+
+        # Display the plot
+        plt.show()
+
 
 def Output():
     pass
 
-def myPrepare():
-    CheckDatabase()
-    Full_Preperation()
-    
-def myPrediction():
-    CheckDatabase()
-    Full_Prediction()
-
 
 
 print("Start")
-#myPrepare()
-myPrediction()
+Full_Preperation()
+#Full_Prediction()
 print("end")
 mycursor.close()
 mydb.close()
