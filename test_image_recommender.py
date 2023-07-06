@@ -1,3 +1,5 @@
+import os
+os.chdir('./Scripts')
 from Image_recommender_Prectictions import load_and_compress_image, real_image_label, label_vergleich, extract_image_embeddings
 
 def test_image_recommender():
