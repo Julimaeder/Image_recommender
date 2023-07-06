@@ -19,7 +19,7 @@ import numba as nb
 #from sqlalchemy import create_engine
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-sqlPath = "../databases/my_database.db"
+sqlPath = "./Scripts/Data/databases/my_database.db"
 imagesPath = "E:\\images\\"
 predictPath = "D:\\Ablage\\predict"
 
