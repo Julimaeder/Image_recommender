@@ -8,12 +8,19 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import sqlite3
+import time
 import datetime
+import numba as nb
+#from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
+#import warnings
+
+#warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
+#warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 #from sqlalchemy import create_engine
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-sqlPath = "../databases/my_database1.db"
-imagesPath = "E:\\"
+sqlPath = "../databases/my_database.db"
+imagesPath = "E:\\images\\"
 predictPath = "D:\\Ablage\\predict"
 
 mydb = sqlite3.connect(sqlPath)
@@ -22,7 +29,9 @@ mycursor = mydb.cursor()
 
 
 """Database"""
-# def CreateDatabase():
+# jit
+# '@jit
+# def CreateDatabase():'
 #     #just execute it if the Database isn't implemented
 #     mycursor.execute("create table images(iID int primary key not null, ipath varchar(120) unique);")
 #     mydb.commit()
@@ -39,9 +48,9 @@ def CreateDatabase():
     mydb.commit()
     #mycursor.execute("CREATE TABLE IF NOT EXISTS embeddings(eID INT, erow INT, ecol INT, r INT, g INT, b INT, PRIMARY KEY(eID, erow, ecol), FOREIGN KEY (eID) REFERENCES images(iID));")
     #mydb.commit()
-    mycursor.execute("CREATE TABLE IF NOT EXISTS schemes(sID INT, row INT, PRIMARY KEY(sID, row), FOREIGN KEY (sID) REFERENCES images(iID));")
+    mycursor.execute("CREATE TABLE IF NOT EXISTS schemes(sID INT PRIMARY KEY, FOREIGN KEY (sID) REFERENCES images(iID));")
     mydb.commit()
-    anzahl_spalten = 675
+    anzahl_spalten = 216
     for spalten_nr in range(0, anzahl_spalten):
         spaltenname = f"spalte_{spalten_nr}"
         mycursor.execute(f"ALTER TABLE schemes ADD {spaltenname} int")
@@ -73,6 +82,7 @@ def ReadIDbyPath(path):
 def ReadPathbyID(id):
     sql_query = f'SELECT ipath FROM images where iID="{id}"'
     result = pd.read_sql(sql_query, con=mydb)
+    print(result)
     if len(result["ipath"]) > 0:
         return result["ipath"].item()
     else:
@@ -89,7 +99,7 @@ def ReadALLID():
 def ReadSchemesbyID(id):
     sql_query = f'SELECT * FROM schemes where sID="{id}"'
     result = pd.read_sql(sql_query, con=mydb)
-    if len(result["amount"]) > 0:
+    if len(result['sID']) > 0:
         return result
     else:
         return None
@@ -106,9 +116,6 @@ def writeImage(id,path):
     mycursor.execute(f'insert into images values({id}, "{path}")')
     mydb.commit()
 
-def writeSchemes(id,r,g,b,amount):
-    mycursor.execute(f'insert into schemes values({id}, {r}, {g}, {b}, {amount})')
-    mydb.commit()
 
 """Preperation"""
 def Path_generator(ipath):#directory = "path/to/directory"):
@@ -121,60 +128,53 @@ def Path_generator(ipath):#directory = "path/to/directory"):
                 yield os.path.join(root, filename)
 
 
+#@nb.jit(forceobj=True,parallel=True)
 def Get_color_scheme(vectors):
-    vectors = np.array(vectors)
-    vector_color, vector_counts = np.unique(vectors, axis=0, return_counts=True)
-    u_vectors = vector_color - (vector_color%17)
+    new_vectors = np.array(vectors)
+    
+    u_vectors = new_vectors - (new_vectors % 51)
     unique_vectors, unique_counts = np.unique(u_vectors, axis=0, return_counts=True)
-    count = 0
-    numbers = np.zeros(len(unique_counts), dtype=np.int64)
 
-    for i, c in enumerate(unique_counts):
-        numbers[i] = np.sum(vector_counts[count:count+c])
-        count += c
-    uvs = unique_vectors / 17
-    return uvs, numbers
+    uvs = unique_vectors / 51
 
-def GoogleAPI():
-    pass
+    return uvs, unique_counts
+
+# @jit
+#def Get_color_scheme(vectors):
+#     vectors = np.array(vectors)
+#     vector_color, vector_counts = np.unique(vectors, axis=0, return_counts=True)
+#     u_vectors = vector_color - (vector_color%51)
+#     unique_vectors, unique_counts = np.unique(u_vectors, axis=0, return_counts=True)
+#     count = 0
+#     numbers = np.zeros(len(unique_counts), dtype=np.int64)
+
+#     for i, c in enumerate(unique_counts):
+#         numbers[i] = np.sum(vector_counts[count:count+c])
+#         count += c
+#     uvs = unique_vectors / 51
+#     return uvs, numbers
+
 
 def Image_to_rgb_scheme(image):
     # Convert the image to RGB mode if it's not already in RGB mode
     image = image.convert("RGB")
-    
+    size = 300
     # Get the width and height of the image
     width, height = image.size
+    if width > size and height > size:
+        image = image.resize((size, size))
+    elif height > size:
+        image = image.resize((width, size))
+    elif width > size:
+        image = image.resize((size, height))
     im3d = np.array(image)
     im = im3d.reshape(-1, im3d.shape[-1])
     return im
 
-def Image_to_rgb_image(image, image_id):
-    # Convert the image to RGB mode if it's not already in RGB mode
-    image = image.convert("RGB")
-    
-    # Get the width and height of the image
-    width, height = image.size
-    
-    # Loop through each pixel in the image
-    for x in range(width):
-        for y in range(height):
-            # Get the RGB values of the pixel
-            r, g, b = image.getpixel((x, y))
-            # Append the RGB values to the list as a vector
-            # korrekturbedarf
-            #print(image_id, x, y, r, g, b)
-            #writePixels(image_id, x, y, r, g, b)
-
-def PreparationCNN():
-    pass
-
-def CNN():
-    pass
-
 def Full_Preperation():
     # Loop through each file in the directory
     image_generator = Path_generator(imagesPath)
-
+    
     print("hi")
     maxID = imageMaxID()
     counter = 0
@@ -185,55 +185,77 @@ def Full_Preperation():
         counter = int(maxID)
 
     # Open the image file
-    for image_path in image_generator:
+    for image_path in tqdm(image_generator, total=140395):
 
 
         image_id = ReadIDbyPath(image_path)
         if image_id is None:
+            #t = time.time()
             counter += 1
-            print(counter)
+            #print(counter)
+            
+            #time1 = time.time()
             writeImage(counter, image_path)
             #try:
             image = Image.open(image_path)
+
             vectors = Image_to_rgb_scheme(image)
-
+            
+            #print(vectors.shape)
+            
+            #time2 = time.time()
             color_scheme, count_scheme = Get_color_scheme(vectors)
-            print(color_scheme.shape, count_scheme.shape)
+            #print(color_scheme.shape, count_scheme.shape)
 
-            rgb_values = np.zeros((16, 16, 16))
+            
+            #time3 = time.time()
+            rgb_values = np.zeros((6, 6, 6))
             rgb_values[color_scheme[:, 0].astype('int32'), color_scheme[:, 1].astype('int32'), color_scheme[:, 2].astype('int32')] = count_scheme
-
-            num = rgb_values.transpose(2,0,1).reshape((8,-1)).astype('int32')
+            
+            num = rgb_values.flatten().astype('int32')#time4 = time.time()
+            
+            values = num.tolist() 
+            #num = rgb_values.transpose(2,0,1).reshape((8,-1)).astype('int32')
             #print(num.shape)
 
-            anzahl_spalten = 512
+            anzahl_spalten = 216
 
-            df = pd.DataFrame({'sID': image_id, "row": range(8)})
-
-            column_data = pd.DataFrame(num, columns=[f"spalte_{spalten_nr}" for spalten_nr in range(anzahl_spalten)])
-
+            #df = pd.DataFrame({'sID': counter})
+            cols = ["sID"]+ [f"spalte_{spalten_nr}" for spalten_nr in range(anzahl_spalten)]
+            data = [counter] + values
+            df = pd.DataFrame(columns=cols)
+            df.loc[0] = data
+            #time5 = time.time()
             # Merge the two DataFrames based on index
-            df = df.merge(column_data, left_index=True, right_index=True)     
+            #df = df.merge(column_data, left_index=True, right_index=True)     
 
-            df = df[df.iloc[:, 2:].sum(axis=1) != 0]
+            #df = df[df.iloc[:, 2:].sum(axis=1) != 0]
             #print(df.shape)
+            
 
+            #time6 = time.time()
             # Insert the data into the database
             df.to_sql(name='schemes', con=mydb, if_exists='append',index = False, chunksize = 1000)
+                     
+            #print("time: ", time.time()-t)
+            #time7 = time.time()   
+            #print("1-2:", time2-time1)
+            #print("2-3:", time3-time2)
+            #print("3-4:", time4-time3)
+            #print("4-5:", time5-time4)
+            #print("5-6:", time6-time5)
+            #print("7-6:", time7-time6)
             #except :
                 #print("continue")
             #print(color_scheme, "\n", count_scheme)
 
 def predictschemes_gen(image):
     vectors = Image_to_rgb_scheme(image)
-
     color_scheme, count_scheme = Get_color_scheme(vectors)
-    rgb_values = np.zeros((16, 16, 16))
+    rgb_values = np.zeros((6, 6, 6), dtype=int)
     rgb_values[color_scheme[:, 0].astype('int32'), color_scheme[:, 1].astype('int32'), color_scheme[:, 2].astype('int32')] = count_scheme
-
-    num = rgb_values.flatten().astype('int32')
-
-    np_i = num.reshape(-1).tolist()
+        
+    np_i = rgb_values.flatten().astype('int32').tolist()
 
     #print(color_scheme.shape, len(count_scheme))
     ids = ReadALLID()
@@ -242,15 +264,14 @@ def predictschemes_gen(image):
         if df_j is not None:
             df_j.values.tolist()
             #print(i,j)
-            np_j = df.values.reshape(-1,).tolist()
+            np_j = df_j.iloc[:, 1:].values.tolist()
             e = Distances(j, np_i,np_j)
             yield j, e 
 
     
 """Code"""
-def Input():
-    pass
 
+#@nb.jit(parallel=True)
 def Distances(id, la,lb):
     a = np.array(la)
     b = np.array(lb)
@@ -260,53 +281,32 @@ def Distances(id, la,lb):
     return euclidean
 
 
-def KNN_color_scheme():
-    pass
-
-def KNN_API():
-    pass
-
 def Full_Prediction():
-    
     image_generator = Path_generator(predictPath)
-    #data = pd.DataFrame(columns=("name", "place", "e", "ec"))
-    for image_path in image_generator:
-        endlist = pd.DataFrame(columns=("e", "ec"))
-        image_name = os.path.split(image_path)[-1]
+    image_paths = list(image_generator)
+    
+    num_results = 5
+    endlist = pd.DataFrame(columns=("e", "ec"))
 
-        image = Image.open(image_path)
-        img_plot = plt.imshow(image)
-        plt.title("AEhnliche Bilder")
-        plt.axis('off')  # Turn off the axis
-        plt.pause(1)
+    # Open and load all images
+    images = [Image.open(image_path) for image_path in image_paths]
+    for image_path, image in zip(image_paths, images):
         schemes = predictschemes_gen(image)
-        #predictembeddings_gen(image)
-        #predictlabels_gen(image)
+
         valmin = 1000000
-        for id, val in tqdm(schemes, total=6852):
+        for id, val in tqdm(schemes, total=140395):
             # Insert data into the DataFrame
-            endlist.loc[len(endlist)] = {"e": id, "ec": val}
             if val < valmin:
-                valmin = val
-                #print(val)
-                newpath = ReadPathbyID(id)
-                new_image = mpimg.imread(newpath)
-                img_plot.set_data(new_image)
-                plt.show(block=False)
-                #plt.draw()
-                plt.pause(0.01)
-        #  IDs und Werte der fünf kleinsten ec-Werte
-                
+                endlist.loc[len(endlist)] = {"e": id, "ec": val}
         smallest_values = endlist.nsmallest(5, "ec")
 
         # Print the resulting DataFrame
         print(smallest_values)
-        
+    
 
-        #print(e_data["ec"])
 
         fig, axes = plt.subplots(1, 6, figsize=(15, 3))
-        
+    
         endimage = Image.open(image_path)
         axes[0].imshow(endimage)
         axes[0].axis('off')
@@ -319,13 +319,18 @@ def Full_Prediction():
             axes[c+1].axis('off')
             c+=1
 
+
+        plt.title("AEhnliche Bilder")
+        plt.axis('off')  # Turn off the axis
+        plt.pause(1)
+
         # Adjust the spacing between subplots
         plt.tight_layout()
 
         # Display the plot
         plt.show(block=False)
-        plt.pause(20)
-        plt.close('all')
+        #plt.pause(20)
+        #plt.close('all')
 
 
 
@@ -333,8 +338,8 @@ start = datetime.datetime.now()
 print("\nStart:", start, ", time:")
 
 print("Start")
-Full_Preperation()
-#Full_Prediction()
+#Full_Preperation()
+Full_Prediction()
 print("end")
 
 end = datetime.datetime.now()
