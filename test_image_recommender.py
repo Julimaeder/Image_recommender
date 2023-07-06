@@ -5,7 +5,7 @@ def test_image_recommender():
     #Test Label:
     expected_output_label = ['German_shepherd', 0.94651806]
     image = load_and_compress_image(path, target_size=(224, 224))
-    output = real_image_label(path)[1:3]
+    output_label = real_image_label(path)[1:3]
     assert output_label == expected_output_label
 
  #   #Test Daten auslesen aus der Datenabnk
