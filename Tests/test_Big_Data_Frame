@@ -1,0 +1,7 @@
+from Big_Data_Frame import Full_Prediction,Full_Preperation
+
+def test_check_prediction():
+    prediction = Full_Prediction()
+
+def test_check_preperation():
+    pass
