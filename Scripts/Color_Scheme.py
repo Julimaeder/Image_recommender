@@ -10,7 +10,10 @@ import matplotlib.image as mpimg
 import sqlite3
 import time
 import datetime
+<<<<<<< HEAD
 #from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
+=======
+>>>>>>> 9c97e86fdc7c5da696e05796625eb5c570b363aa
 #import warnings
 
 #warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
@@ -293,6 +296,10 @@ def predictschemes_gen(image):
 
     
 """Code"""
+<<<<<<< HEAD
+=======
+
+>>>>>>> 9c97e86fdc7c5da696e05796625eb5c570b363aa
 def Distances(image, df1, num_images=5):
     distances = []
     #nearest_images = []
