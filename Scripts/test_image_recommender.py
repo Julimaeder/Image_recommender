@@ -2,6 +2,7 @@ from Scripts.Image_recommender_Predictions import real_image_label, label_vergle
 from Scripts.Image_recommender_Vorverarbeitung import load_and_compress_image
 
 def test_image_recommender():
+    global image
     path = "../.github/Test_bild/standing-german-shepherd.jpg"
     #Test Label:
     expected_output_label = ['German_shepherd', 0.94651806]
