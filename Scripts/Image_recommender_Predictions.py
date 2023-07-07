@@ -6,9 +6,10 @@ import numpy as np
 import pandas as pd
 import pathlib
 import matplotlib.pyplot as plt
+from Color_Scheme import Path_generator, Full_Prediction
 filepath = str(pathlib.Path(__file__).parent.resolve())
 os.chdir(filepath)
-from Image_recommender_Vorverarbeitung import load_and_compress_image, extract_image_embeddings, label_image, model
+from Scripts.Image_recommender_Vorverarbeitung import load_and_compress_image, extract_image_embeddings, label_image, model
 
 def find_nearest_images_embeddings(embeddings_image, df1, num_images=5):
     global embeddings2, distances, indices
@@ -152,35 +153,41 @@ def display_combined_image(image_paths_embeddings,image_paths_label,real_image_p
         plt.axis('off')
     plt.show()
 
-def main(real_image_path):
+def main(image_path):
     global nearest_images_embeddings,image
     df1 = pd.read_pickle("Data\\Pickle_embeddings_test.pkl")
-    image = load_and_compress_image(real_image_path, target_size=(224, 224))
-    embeddings_image = extract_image_embeddings(image)
-    nearest_images_embeddings  = find_nearest_images_embeddings(embeddings_image,df1)
-    image_label = real_image_label(real_image_path)
-    result_first_1 = label_vergleich(image_label,sql_string_nr = 1)
-    result_first_2 = label_vergleich(image_label,sql_string_nr = 2)
-    result_first_3 = label_vergleich(image_label,sql_string_nr = 3)
-    result_first_4 = label_vergleich(image_label,sql_string_nr = 4)
-    result_first_5 = label_vergleich(image_label,sql_string_nr = 5)
-    for e in result_first_5:
-        result_first_4.remove(e)
-        result_first_3.remove(e)
-        result_first_2.remove(e)
-        result_first_1.remove(e)
-    for e in result_first_4:
-        result_first_3.remove(e)
-        result_first_2.remove(e)
-        result_first_1.remove(e)
-    for e in result_first_3:
-        result_first_2.remove(e)
-        result_first_1.remove(e)
-    for e in result_first_2:
-        result_first_1.remove(e)
-    nearest_images_label = find_nearest_images_label(result_first_1,result_first_2,result_first_3,result_first_4,result_first_5)
-    #Plot Images
-    display_combined_image(nearest_images_embeddings,nearest_images_label,real_image_path)
+    image_generator = Path_generator(image_path)
+    
+    # Open and load all images
+    #images = [Image.open(image_path) for image_path in image_paths]
+    for real_image_path in image_generator:
+        image = load_and_compress_image(real_image_path, target_size=(224, 224))
+        color_schemes = Full_Prediction(real_image_path)
+        embeddings_image = extract_image_embeddings(image)
+        nearest_images_embeddings  = find_nearest_images_embeddings(embeddings_image,df1)
+        image_label = real_image_label(real_image_path)
+        result_first_1 = label_vergleich(image_label,sql_string_nr = 1)
+        result_first_2 = label_vergleich(image_label,sql_string_nr = 2)
+        result_first_3 = label_vergleich(image_label,sql_string_nr = 3)
+        result_first_4 = label_vergleich(image_label,sql_string_nr = 4)
+        result_first_5 = label_vergleich(image_label,sql_string_nr = 5)
+        for e in result_first_5:
+            result_first_4.remove(e)
+            result_first_3.remove(e)
+            result_first_2.remove(e)
+            result_first_1.remove(e)
+        for e in result_first_4:
+            result_first_3.remove(e)
+            result_first_2.remove(e)
+            result_first_1.remove(e)
+        for e in result_first_3:
+            result_first_2.remove(e)
+            result_first_1.remove(e)
+        for e in result_first_2:
+            result_first_1.remove(e)
+        nearest_images_label = find_nearest_images_label(result_first_1,result_first_2,result_first_3,result_first_4,result_first_5)
+        #Plot Images
+        display_combined_image(nearest_images_embeddings,nearest_images_label,real_image_path)
 
 """
 Da das modell mit dem ImageNet Datensatz trainiert wurde, hat es nur 1000 verschiedene Klassen.

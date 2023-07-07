@@ -19,28 +19,15 @@ import numba as nb
 #from sqlalchemy import create_engine
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-sqlPath = "./Scripts/Data/databases/my_database.db"
+sqlPath = "./Data/databases/my_database.db"
 imagesPath = "E:\\images\\"
 predictPath = "D:\\Ablage\\predict"
+
 
 mydb = sqlite3.connect(sqlPath)
 mycursor = mydb.cursor()
 
 
-
-"""Database"""
-# jit
-# '@jit
-# def CreateDatabase():'
-#     #just execute it if the Database isn't implemented
-#     mycursor.execute("create table images(iID int primary key not null, ipath varchar(120) unique);")
-#     mydb.commit()
-#     mycursor.execute("create table embeddings(eID int, erow int(100), ecol int(100), r int(3), g int(3), b int(3), primary key(eID, erow, ecol), foreign key (eID) references images(iID))")
-#     mydb.commit()
-#     mycursor.execute("create table schemes(sID int, r int(3), g int(3), b int(3), amount int(10), primary key(sID, r, g, b), foreign key (sID) references images(iID))")
-#     mydb.commit()
-#     mycursor.execute("create table schemes_distances(ID1 int, ID2 int, Euclidean double, Manhattan double, Cosine double, Jaccard double, Hamming double, primary key(ID1, ID2), foreign key (ID1) references images(iID), foreign key (ID2) references images(iID))")
-#     mydb.commit()
 
 def CreateDatabase():
     # just execute it if the Database isn't implemented
@@ -78,7 +65,16 @@ def ReadIDbyPath(path):
         return int(result["iID"].item())
     else:
         return None
-    
+
+def readAllImages():
+    sql_query = f'SELECT * FROM images INNER JOIN schemes ON images.iID = schemes.sID'
+    result = pd.read_sql(sql_query, con=mydb)
+    if len(result["iID"]) > 0:
+        return result
+    else:
+        return None
+
+
 def ReadPathbyID(id):
     sql_query = f'SELECT ipath FROM images where iID="{id}"'
     result = pd.read_sql(sql_query, con=mydb)
@@ -272,80 +268,65 @@ def predictschemes_gen(image):
 """Code"""
 
 #@nb.jit(parallel=True)
-def Distances(id, la,lb):
-    a = np.array(la)
-    b = np.array(lb)
-
-    euclidean = np.linalg.norm(a - b)
+def Distances(image, df1, num_images=5):
+    distances = []
+    #nearest_images = []
+    for i in tqdm(range(len(df1))):
+        colors = df1.iloc[i].values[1:]
+        distance = np.linalg.norm(image - colors)
+        distances.append(distance)
+    paths = df1.iloc[:,0].tolist()
+    df2 = pd.DataFrame({'path': paths,'enum': distances})
+    nearest_images = df2.nsmallest(num_images, "enum")
     
-    return euclidean
+    return nearest_images
 
 
-def Full_Prediction():
-    image_generator = Path_generator(predictPath)
-    image_paths = list(image_generator)
+def Full_Prediction(image_path):
+
+    df = readAllImages()
+    df= df.drop(['sID', 'iID'], axis=1)
+    print("Loaded Data")
     
-    num_results = 5
-    endlist = pd.DataFrame(columns=("e", "ec"))
-
     # Open and load all images
-    images = [Image.open(image_path) for image_path in image_paths]
-    for image_path, image in zip(image_paths, images):
-        schemes = predictschemes_gen(image)
+    image = Image.open(image_path)
+        
+    #schemes = predictschemes_gen(image)
+    vectors = Image_to_rgb_scheme(image)
 
-        valmin = 1000000
-        for id, val in tqdm(schemes, total=140395):
-            # Insert data into the DataFrame
-            if val < valmin:
-                endlist.loc[len(endlist)] = {"e": id, "ec": val}
-        smallest_values = endlist.nsmallest(5, "ec")
+    color_scheme, count_scheme = Get_color_scheme(vectors)
+    rgb_values = np.zeros((6, 6, 6), dtype=int)
+    rgb_values[color_scheme[:, 0].astype('int32'), color_scheme[:, 1].astype('int32'), color_scheme[:, 2].astype('int32')] = count_scheme
+        
+    np_i = rgb_values.flatten().astype('int32')
+    #print(np_i.shape, np_i)
+    color_scheme_distances = Distances(np_i, df)
 
-        # Print the resulting DataFrame
-        print(smallest_values)
+    print(type(color_scheme_distances), "\n","\n",color_scheme_distances)
+    smallest_list = []
+    for path in color_scheme_distances["path"]:
+        smallest_list.append('\\'.join(path.split("\\")[:-1]))
+        smallest_list.append(path.split("\\")[-1])
     
-
-
-        fig, axes = plt.subplots(1, 6, figsize=(15, 3))
-    
-        endimage = Image.open(image_path)
-        axes[0].imshow(endimage)
-        axes[0].axis('off')
-        c = 0
-        for endid in smallest_values["e"]:
-            print(endid)
-            imagepath = ReadPathbyID(endid)
-            endimage = Image.open(imagepath)
-            axes[c+1].imshow(endimage)
-            axes[c+1].axis('off')
-            c+=1
-
-
-        plt.title("AEhnliche Bilder")
-        plt.axis('off')  # Turn off the axis
-        plt.pause(1)
-
-        # Adjust the spacing between subplots
-        plt.tight_layout()
-
-        # Display the plot
-        plt.show(block=False)
-        #plt.pause(20)
-        #plt.close('all')
+    return smallest_list
 
 
 
-start = datetime.datetime.now()
-print("\nStart:", start, ", time:")
 
-print("Start")
-#Full_Preperation()
-Full_Prediction()
-print("end")
+# start = datetime.datetime.now()
+# print("\nStart:", start, ", time:")
 
-end = datetime.datetime.now()
-duration = end - start
+# print("Start")
+# #Full_Preperation()
+# Full_Prediction()
+# print("end")
 
-print("\nStart:", start, ", end:", end, ", duration:", duration)
+# end = datetime.datetime.now()
+# duration = end - start
 
-mycursor.close()
-mydb.close()
+# print("\nStart:", start, ", end:", end, ", duration:", duration)
+
+# mycursor.close()
+# mydb.close()
+
+# speichern als lost(filename,pfad) x 5
