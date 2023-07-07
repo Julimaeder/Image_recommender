@@ -10,7 +10,6 @@ import matplotlib.image as mpimg
 import sqlite3
 import time
 import datetime
-import numba as nb
 #from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
 #import warnings
 
@@ -24,12 +23,8 @@ imagesPath = "E:\\images\\"
 predictPath = "D:\\Ablage\\predict"
 
 
-mydb = sqlite3.connect(sqlPath)
-mycursor = mydb.cursor()
 
-
-
-def CreateDatabase():
+def CreateDatabase(mydb,mycursor):
     # just execute it if the Database isn't implemented
     mycursor.execute("CREATE TABLE IF NOT EXISTS images(iID INT PRIMARY KEY NOT NULL, ipath VARCHAR(120) UNIQUE);")
     mydb.commit()
@@ -42,16 +37,22 @@ def CreateDatabase():
         spaltenname = f"spalte_{spalten_nr}"
         mycursor.execute(f"ALTER TABLE schemes ADD {spaltenname} int")
     mydb.commit()
+    mycursor.close()
+    mydb.close()
     
 
 
 def CheckDatabase():
+    mydb = sqlite3.connect(sqlPath)
+    mycursor = mydb.cursor()
     # check if the Database is implemented
     sql_query = f'SELECT name FROM sqlite_master WHERE name="schemes"'
     result = pd.read_sql(sql_query, con=mydb)
     if len(result['name']) == 0:
-        CreateDatabase()
+        CreateDatabase(mydb,mycursor)
     print("connected")
+    mycursor.close()
+    mydb.close()
 
 
 CheckDatabase()
@@ -59,16 +60,24 @@ CheckDatabase()
 #engine = create_engine('mysql+mysqldb://bigData:Informatiker1@localhost/root', echo = False)
 
 def ReadIDbyPath(path):
+    mydb = sqlite3.connect(sqlPath)
+    mycursor = mydb.cursor()
     sql_query = f'SELECT iID FROM images where ipath="{path}"'
     result = pd.read_sql(sql_query, con=mydb)
+    mycursor.close()
+    mydb.close()
     if len(result["iID"]) > 0:
         return int(result["iID"].item())
     else:
         return None
 
 def readAllImages():
+    mydb = sqlite3.connect(sqlPath)
+    mycursor = mydb.cursor()
     sql_query = f'SELECT * FROM images INNER JOIN schemes ON images.iID = schemes.sID'
     result = pd.read_sql(sql_query, con=mydb)
+    mycursor.close()
+    mydb.close()
     if len(result["iID"]) > 0:
         return result
     else:
@@ -76,41 +85,61 @@ def readAllImages():
 
 
 def ReadPathbyID(id):
+    mydb = sqlite3.connect(sqlPath)
+    mycursor = mydb.cursor()
     sql_query = f'SELECT ipath FROM images where iID="{id}"'
     result = pd.read_sql(sql_query, con=mydb)
     print(result)
+    mycursor.close()
+    mydb.close()
     if len(result["ipath"]) > 0:
         return result["ipath"].item()
     else:
         return None
     
 def ReadALLID():
+    mydb = sqlite3.connect(sqlPath)
+    mycursor = mydb.cursor()
     sql_query = f'SELECT iID FROM images'
     result = pd.read_sql(sql_query, con=mydb)
+    mycursor.close()
+    mydb.close()
     if len(result["iID"]) > 0:
         return list(result["iID"])
     else:
         return None
     
 def ReadSchemesbyID(id):
+    mydb = sqlite3.connect(sqlPath)
+    mycursor = mydb.cursor()
     sql_query = f'SELECT * FROM schemes where sID="{id}"'
     result = pd.read_sql(sql_query, con=mydb)
+    mycursor.close()
+    mydb.close()
     if len(result['sID']) > 0:
         return result
     else:
         return None
 
 def imageMaxID():
+    mydb = sqlite3.connect(sqlPath)
+    mycursor = mydb.cursor()
     sql_query = 'SELECT MAX(iID) as vali FROM images'
     result = pd.read_sql(sql_query, con=mydb)
+    mycursor.close()
+    mydb.close()
     if len(result["vali"]) > 0:
         return result["vali"].item()
     else:
         return None
 
 def writeImage(id,path):
+    mydb = sqlite3.connect(sqlPath)
+    mycursor = mydb.cursor()
     mycursor.execute(f'insert into images values({id}, "{path}")')
     mydb.commit()
+    mycursor.close()
+    mydb.close()
 
 
 """Preperation"""
@@ -124,7 +153,6 @@ def Path_generator(ipath):#directory = "path/to/directory"):
                 yield os.path.join(root, filename)
 
 
-#@nb.jit(forceobj=True,parallel=True)
 def Get_color_scheme(vectors):
     new_vectors = np.array(vectors)
     
@@ -135,7 +163,6 @@ def Get_color_scheme(vectors):
 
     return uvs, unique_counts
 
-# @jit
 #def Get_color_scheme(vectors):
 #     vectors = np.array(vectors)
 #     vector_color, vector_counts = np.unique(vectors, axis=0, return_counts=True)
@@ -266,8 +293,6 @@ def predictschemes_gen(image):
 
     
 """Code"""
-
-#@nb.jit(parallel=True)
 def Distances(image, df1, num_images=5):
     distances = []
     #nearest_images = []
@@ -286,7 +311,7 @@ def Full_Prediction(image_path):
 
     df = readAllImages()
     df= df.drop(['sID', 'iID'], axis=1)
-    print("Loaded Data")
+    print("Color scheme")
     
     # Open and load all images
     image = Image.open(image_path)
@@ -302,7 +327,7 @@ def Full_Prediction(image_path):
     #print(np_i.shape, np_i)
     color_scheme_distances = Distances(np_i, df)
 
-    print(type(color_scheme_distances), "\n","\n",color_scheme_distances)
+    #print(type(color_scheme_distances), "\n","\n",color_scheme_distances)
     smallest_list = []
     for path in color_scheme_distances["path"]:
         smallest_list.append('\\'.join(path.split("\\")[:-1]))
