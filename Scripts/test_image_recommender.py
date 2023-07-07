@@ -2,7 +2,7 @@ from Scripts.Image_recommender_Predictions import load_and_compress_image, real_
 import Scripts.Image_recommender_Vorverarbeitung
 
 def test_image_recommender():
-    path = ".github/Test_bild/standing-german-shepherd.jpg"
+    path = "../.github/Test_bild/standing-german-shepherd.jpg"
     #Test Label:
     expected_output_label = ['German_shepherd', 0.94651806]
     image = load_and_compress_image(path, target_size=(224, 224))
