@@ -1,6 +1,6 @@
 """
 Infos:
-Im non-live code: Die erste Progress Bar ist extract_image_embeddings und die zweite label_image
+- Jedes Bild hat 2 Progress Bars: Die erste ist extract_image_embeddings und die zweite label_image
 """
 import sqlite3
 import os
@@ -13,14 +13,9 @@ import time
 import pandas as pd
 from tqdm import tqdm
 
-
-#%%
-os.chdir('C:\\Users\\maede\\Desktop\\Big_Data\\Test_Dateien\\final_test')
-#%%
-# Überprüfen Sie, ob der Ordner 'databases' nicht existiert
-if not os.path.exists('databases'):
-    # Erstellen Sie den Ordner
-    os.makedirs('databases')
+# Überprüfen, ob der Ordner 'databases' existiert, wenn nicht erstellen
+if not os.path.exists("databases"):
+    os.makedirs("databases")
 
 conn = sqlite3.connect("databases/Big_data_database.db")
 curs = conn.cursor()
@@ -37,13 +32,12 @@ Label5 TEXT, Label5_Wert REAL)
 conn.commit()
 conn.close()
 
-#%%
-logging.basicConfig(filename='Logging_test.log', level=logging.ERROR)
-#%%
-folder_path = 'C:\\Users\\maede\\Desktop\\Big_Data\\train'#'E:\\images'
-model = MobileNetV2(weights='imagenet')
+#logging.basicConfig(filename='Logging_test.log', level=logging.ERROR)
 
-# Schritt 3: Lade und komprimiere die Bilder
+folder_path = "E:\\images"
+model = MobileNetV2(weights="imagenet")
+
+# Bilder komprimieren, damit MobileNet damit arbeiten kann
 def load_and_compress_image(image_path, target_size):
     image = Image.open(image_path)
     image = image.resize(target_size)
@@ -51,12 +45,13 @@ def load_and_compress_image(image_path, target_size):
     preprocessed_image = tf.keras.applications.mobilenet.preprocess_input(image_array)
     return preprocessed_image
 
-# Schritt 4: Extrahiere Bild-Einbettungen
+# Embeddings extrahieren mittels ImageNetV2
 def extract_image_embeddings(image):
     image = np.expand_dims(image, axis=0)
     embeddings = model.predict(image)
     return embeddings.flatten()
 
+# generator, welcher die Pfade wiedergibt
 def image_generator(folder_path):
     global dirpath,filename
     image_extensions = ('.jpg', '.png', '.jpeg')
@@ -65,12 +60,12 @@ def image_generator(folder_path):
             if filename.lower().endswith(image_extensions):
                 yield os.path.join(dirpath, filename)
 
-
+# Checkpoint in checkpoint.txt speichern
 def save_checkpoint(data, filename='checkpoint.txt'):
     with open(filename, 'w') as f:
         f.write(str(data))
 
-# load checkpoint
+# Checkpoint laden
 def load_checkpoint(filename='checkpoint.txt'):
     if os.path.exists(filename):
         with open(filename, 'r') as f:
@@ -78,8 +73,8 @@ def load_checkpoint(filename='checkpoint.txt'):
     else:
         return None
     
-
-def label_image(model, compressed_image, target_size=(224, 224), top_labels=1):
+# Bilder mittels ImageNetV2 Labeln und die 5 größten Label, uinklusive Werte zurückgeben
+def label_image(model, compressed_image, target_size=(224, 224), top_labels=5):
     image = compressed_image
     if len(image.shape) == 3:
         image = np.expand_dims(image, axis=0)
@@ -87,23 +82,21 @@ def label_image(model, compressed_image, target_size=(224, 224), top_labels=1):
     labels = decode_predictions(predictions, top=top_labels)
     return labels[0]
     
+# Embeddings in einer pickle Datei speichern (kleiner und schneller als eine DB, wenn man auf alle Werte zugreifen muss;
+# Bei den Labels kann man mit einem WHERE statement nur die Daten, die man braucht auslesen, deswegen werden nur die
+# Embeddings in der Pickle gespeichert)
 def save_pickle(embeddings_list,filenames_list,i):
     embeddings_df = pd.DataFrame(embeddings_list, index=filenames_list)
     
     pickle_filename = 'Pickle_embeddings_test.pkl'
     save_checkpoint(i)  # nur alle 500, weil checkpoint sonst ggf weiter ist als das Speichern 
                         #--> dann würden bis zu 499 Bilder verloren gehen
-    
     if os.path.exists(pickle_filename):
         with open(pickle_filename, "rb"):
             existing_data = pd.read_pickle(pickle_filename)
         embeddings_df = pd.concat([existing_data, embeddings_df])
-
     with open(pickle_filename, "wb"):
         pd.to_pickle(embeddings_df, pickle_filename)
-        
-
-#%%
 
 def main():
     global i
@@ -162,7 +155,6 @@ def main():
     end_time = time.time() - start_time
     print(f"time: {end_time}   errors: {error_counter}")
         
-
 #%%
 if __name__ == '__main__':
     main() #aufpassen, dass nicht ausversehen gestartet wird

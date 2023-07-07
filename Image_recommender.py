@@ -1,6 +1,7 @@
 import pathlib, os
 filepath = str(pathlib.Path(__file__).parent.resolve())
-os.chdir(os.path.join(filepath, 'Scripts'))
+filepath2 = os.path.join(filepath, 'Scripts')
+os.chdir(filepath2)
 from Image_recommender_Predictions import main
 
-main("path/to/filename.jpg")
+main("Path/to/image.jpg")

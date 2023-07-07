@@ -10,18 +10,12 @@ filepath = str(pathlib.Path(__file__).parent.resolve())
 os.chdir(filepath)
 from Image_recommender_Vorverarbeitung import load_and_compress_image, extract_image_embeddings, label_image, model
 
-#%%
-
-#%%
-
-#%%
-
 def find_nearest_images_embeddings(embeddings_image, df1, num_images=5):
     global embeddings2, distances, indices
     distances = []
     nearest_images_embeddings = []
     for i in range(len(df1)):
-        embeddings2 = df1.iloc[i].values[0:]  # Annahme: Embeddings in den Spalten 1 bis 1000 des DataFrames
+        embeddings2 = df1.iloc[i].values[0:]
         distance = np.linalg.norm(embeddings_image - embeddings2)
         distances.append(distance)
     indices = np.argsort(distances)[:num_images]
@@ -30,7 +24,7 @@ def find_nearest_images_embeddings(embeddings_image, df1, num_images=5):
     
     return nearest_images_embeddings
 
-def real_image_label(real_image_path): #!!! namen ändern
+def real_image_label(real_image_path):
     image_label = []
     labels = label_image(model, image, target_size=(224, 224), top_labels=5)
     image_label = [real_image_path]
@@ -64,7 +58,7 @@ def label_vergleich(image_label,sql_string_nr = 1): #label_nummer = 1,3,5,7,9
     converted_images = []
     for image in similar_images:
         converted_image = list(image)
-        for i in range(2, len(image), 2):  # Beginnen Sie bei Index 2 und überspringen Sie jedes zweite Element
+        for i in range(2, len(image), 2):  # Bei Index 2 beginnen und jedes zweite Element überspringen
             if isinstance(image[i], bytes):
                 converted_image[i] = bytes_to_float(image[i])
         converted_images.append(tuple(converted_image))
@@ -146,7 +140,6 @@ def display_combined_image(image_paths_embeddings,image_paths_label,real_image_p
     fig = plt.figure(figsize=(10, 2))
     columns = 5
     rows = 2
-
     for i in range(1, 6):
         img = Image.open(image_paths_embeddings[i-1])
         fig.add_subplot(rows, columns, i)
@@ -158,7 +151,6 @@ def display_combined_image(image_paths_embeddings,image_paths_label,real_image_p
         plt.imshow(img)
         plt.axis('off')
     plt.show()
-#%%
 
 def main(real_image_path):
     global nearest_images_embeddings,image
@@ -190,46 +182,8 @@ def main(real_image_path):
     #Plot Images
     display_combined_image(nearest_images_embeddings,nearest_images_label,real_image_path)
 
-
-
-
-#%%
-# Embeddings:
-
-#list_nearest_images_embeddings = []
-#for image in nearest_images_embeddings:
-    #list_nearest_images_embeddings.append(os.path.join('E:\\images\\coco2017_unlabeled\\unlabeled2017', image))
-
-
-
-#%%
-#Label
-
-#list_nearest_images_label = []
-#for image in list_nearest_images_label:
- #   nearest_images_label.append(os.path.join('E:\\images\\coco2017_unlabeled\\unlabeled2017\\', image))
-
-
-
-
-
-#%%
-'''
-conn = sqlite3.connect("databases/Big_data_database.db")
-curs = conn.cursor()
-sql_string = "SELECT * FROM Labels"
-curs.execute(sql_string)
-similar_images = curs.fetchall()
-conn.close()
-
 """
 Da das modell mit dem ImageNet Datensatz trainiert wurde, hat es nur 1000 verschiedene Klassen.
 So kommen z.B. bei bildern mit einem Regenbogen, Bilder mit Seifenvlasen raus, da es kein Rainbow kennt.
 Das erste Label ist hierbei 'bubble'
-
-Todo: Wenn alles einmal duch gelaufen ist checken, dass auch wirklich alle ordner durch genagen wurden
---> erste zeile aus dem df auslesen, mit os. irgendwas kürzen (gibt ja eine Funktion für den filename ohne path, dann auch safe für nur path)
---> und das in ein set
 """
-#%%
-'''
