@@ -1,3 +1,6 @@
+"""
+Bitte das Scripts. in Zeile 14 entfernen, dient nur zu testzwecken.
+"""
 import struct # zum konvertieren von binary zu float beim auslesen der db
 import sqlite3
 import os
