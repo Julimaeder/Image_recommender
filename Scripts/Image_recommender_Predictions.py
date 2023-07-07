@@ -27,7 +27,7 @@ def find_nearest_images_embeddings(embeddings_image, df1, num_images=5):
     
     return nearest_images_embeddings
 
-def real_image_label(real_image_path):
+def real_image_label(real_image_path,image):
     image_label = []
     labels = label_image(model, image, target_size=(224, 224), top_labels=5)
     image_label = [real_image_path]
@@ -161,7 +161,7 @@ def main(real_image_path):
     image = load_and_compress_image(real_image_path, target_size=(224, 224))
     embeddings_image = extract_image_embeddings(image)
     nearest_images_embeddings  = find_nearest_images_embeddings(embeddings_image,df1)
-    image_label = real_image_label(real_image_path)
+    image_label = real_image_label(real_image_path,image)
     result_first_1 = label_vergleich(image_label,sql_string_nr = 1)
     result_first_2 = label_vergleich(image_label,sql_string_nr = 2)
     result_first_3 = label_vergleich(image_label,sql_string_nr = 3)
