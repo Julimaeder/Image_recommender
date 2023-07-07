@@ -8,7 +8,7 @@ import pathlib
 import matplotlib.pyplot as plt
 filepath = str(pathlib.Path(__file__).parent.resolve())
 os.chdir(filepath)
-from Image_recommender_Vorverarbeitung import load_and_compress_image, extract_image_embeddings, label_image, model
+from Scripts.Image_recommender_Vorverarbeitung import load_and_compress_image, extract_image_embeddings, label_image, model
 
 def find_nearest_images_embeddings(embeddings_image, df1, num_images=5):
     global embeddings2, distances, indices
