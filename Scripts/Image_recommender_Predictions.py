@@ -1,3 +1,6 @@
+"""
+Bitte das Scripts. in Zeile 14 entfernen, dient nur zu testzwecken.
+"""
 import struct # zum konvertieren von binary zu float beim auslesen der db
 import sqlite3
 import os
@@ -25,7 +28,7 @@ def find_nearest_images_embeddings(embeddings_image, df1, num_images=5):
     
     return nearest_images_embeddings
 
-def real_image_label(real_image_path):
+def real_image_label(real_image_path,image):
     image_label = []
     labels = label_image(model, image, target_size=(224, 224), top_labels=5)
     image_label = [real_image_path]
@@ -156,6 +159,7 @@ def display_combined_image(image_paths_embeddings,image_paths_label,real_image_p
 def main(image_path):
     global nearest_images_embeddings,image
     df1 = pd.read_pickle("Data\\Pickle_embeddings_test.pkl")
+
     image_generator = Path_generator(image_path)
     
     # Open and load all images
