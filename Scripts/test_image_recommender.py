@@ -10,8 +10,8 @@ def test_image_recommender():
     assert output_label == expected_output_label
 
     #Test Embeddings:
-    expected_output_embeddings = 1000
-    output_embeddings = len(extract_image_embeddings(image)) #genaue Werte können nur schelcht verglichen werden, da die Berechnungen teils minimal von einander abweichen
+    expected_output_embeddings = 1000 #genaue Werte können nur schelcht verglichen werden, da die Berechnungen teils minimal von einander abweichen
+    output_embeddings = len(extract_image_embeddings(image)) 
     assert output_embeddings == expected_output_embeddings
 
  #   #Test Daten auslesen aus der Datenbank
