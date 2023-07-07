@@ -12,7 +12,7 @@ def test_image_recommender():
     #Test Embeddings:
     expected_output_embeddings = 1000
     output_embeddings = len(extract_image_embeddings(image))
-    assert output_embeddings == expected_embeddings_label
+    assert output_embeddings == expected_output_embeddings
 
  #   #Test Daten auslesen aus der Datenbank
  #   expected_output_db = 'E:\\images\\coco2017_unlabeled\\unlabeled2017\\000000075102.jpg'
