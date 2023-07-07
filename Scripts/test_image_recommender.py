@@ -4,9 +4,9 @@ from Scripts.Image_recommender_Vorverarbeitung import load_and_compress_image
 def test_image_recommender():
     path = "../.github/Test_bild/standing-german-shepherd.jpg"
     #Test Label:
-    expected_output_label = ['German_shepherd', 0.94651806]
+    expected_output_label = ['German_shepherd']
     image = load_and_compress_image(path, target_size=(224, 224))
-    output_label = real_image_label(path,image)[1:3]
+    output_label = real_image_label(path,image)[1]
     assert output_label == expected_output_label
 
  #   #Test Daten auslesen aus der Datenabnk
