@@ -1,5 +1,5 @@
-from Scripts.Image_recommender_Predictions import load_and_compress_image, real_image_label, label_vergleich, extract_image_embeddings
-import Scripts.Image_recommender_Vorverarbeitung
+from Scripts.Image_recommender_Predictions import , real_image_label, label_vergleich, extract_image_embeddings
+from Scripts.Image_recommender_Vorverarbeitung import load_and_compress_image
 
 def test_image_recommender():
     path = "../.github/Test_bild/standing-german-shepherd.jpg"
