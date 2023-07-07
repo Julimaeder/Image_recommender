@@ -1,4 +1,4 @@
-from Image_recommender_Predictions import load_and_compress_image, real_image_label, label_vergleich, extract_image_embeddings
+from Image_recommender_Predictions.py import load_and_compress_image, real_image_label, label_vergleich, extract_image_embeddings
 
 def test_image_recommender():
     path = ".github/Test_bild/standing-german-shepherd.jpg"
