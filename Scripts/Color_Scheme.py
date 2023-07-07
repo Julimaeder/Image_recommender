@@ -10,8 +10,6 @@ import matplotlib.image as mpimg
 import sqlite3
 import time
 import datetime
-import numba as nb
-#from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
 #import warnings
 
 #warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
@@ -124,7 +122,6 @@ def Path_generator(ipath):#directory = "path/to/directory"):
                 yield os.path.join(root, filename)
 
 
-#@nb.jit(forceobj=True,parallel=True)
 def Get_color_scheme(vectors):
     new_vectors = np.array(vectors)
     
@@ -267,7 +264,6 @@ def predictschemes_gen(image):
     
 """Code"""
 
-#@nb.jit(parallel=True)
 def Distances(image, df1, num_images=5):
     distances = []
     #nearest_images = []
