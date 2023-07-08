@@ -1,5 +1,5 @@
 """
-Bitte das Scripts. in Zeile 14 entfernen, dient nur zu testzwecken.
+Bitte das Scripts. in Zeile 12 & 15 entfernen, dient nur zu testzwecken.
 """
 import struct # zum konvertieren von binary zu float beim auslesen der db
 import sqlite3
@@ -136,14 +136,14 @@ def find_nearest_images_label(result_first_1,result_first_2,result_first_3,resul
             nearest_images_needed -= 1
     return list_nearest_images_label
 
-def display_combined_image(image_paths_embeddings,image_paths_label,real_image_path):
+def display_combined_image(image_paths_embeddings,image_paths_label,real_image_path,color_schemes):
     img1 = Image.open(real_image_path)
     plt.imshow(img1)
     plt.axis('off')
     plt.show()
-    fig = plt.figure(figsize=(10, 2))
+    fig = plt.figure(figsize=(10, 3))
     columns = 5
-    rows = 2
+    rows = 3
     for i in range(1, 6):
         img = Image.open(image_paths_embeddings[i-1])
         fig.add_subplot(rows, columns, i)
@@ -152,6 +152,11 @@ def display_combined_image(image_paths_embeddings,image_paths_label,real_image_p
     for i in range(1, 6):
         img = Image.open(image_paths_label[i-1])
         fig.add_subplot(rows, columns, i+5)
+        plt.imshow(img)
+        plt.axis('off')
+    for i in range(1, 6):
+        img = Image.open(color_schemes[i-1])
+        fig.add_subplot(rows, columns, i+10)
         plt.imshow(img)
         plt.axis('off')
     plt.show()
@@ -170,7 +175,7 @@ def main(image_path):
         color_schemes = Full_Prediction(real_image_path, df)
         embeddings_image = extract_image_embeddings(image)
         nearest_images_embeddings  = find_nearest_images_embeddings(embeddings_image,df1)
-        image_label = real_image_label(real_image_path)
+        image_label = real_image_label(real_image_path,image)
         result_first_1 = label_vergleich(image_label,sql_string_nr = 1)
         result_first_2 = label_vergleich(image_label,sql_string_nr = 2)
         result_first_3 = label_vergleich(image_label,sql_string_nr = 3)
@@ -192,7 +197,7 @@ def main(image_path):
             result_first_1.remove(e)
         nearest_images_label = find_nearest_images_label(result_first_1,result_first_2,result_first_3,result_first_4,result_first_5)
         #Plot Images
-        display_combined_image(nearest_images_embeddings,nearest_images_label,real_image_path)
+        display_combined_image(nearest_images_embeddings,nearest_images_label,real_image_path,color_schemes)
 
 """
 Da das modell mit dem ImageNet Datensatz trainiert wurde, hat es nur 1000 verschiedene Klassen.
