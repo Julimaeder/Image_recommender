@@ -13,13 +13,12 @@ import time
 import pandas as pd
 from tqdm import tqdm
 
+# Datenbank für die Labels erstellen
 # Überprüfen, ob der Ordner 'databases' existiert, wenn nicht erstellen
 if not os.path.exists("databases"):
     os.makedirs("databases")
-
 conn = sqlite3.connect("databases/Big_data_database.db")
 curs = conn.cursor()
-
 curs.execute("""
 CREATE TABLE IF NOT EXISTS Labels
 (Pfad TEXT, 
@@ -32,6 +31,7 @@ Label5 TEXT, Label5_Wert REAL)
 conn.commit()
 conn.close()
 
+#logging, um zu schauen, welche Bilder nicht funktioniert haben
 #logging.basicConfig(filename='Logging_test.log', level=logging.ERROR)
 
 folder_path = "E:\\images"
@@ -51,7 +51,7 @@ def extract_image_embeddings(image):
     embeddings = model.predict(image)
     return embeddings.flatten()
 
-# generator, welcher die Pfade wiedergibt
+# generator, welcher alle Pfade in einem Ordner (mit Unterordnern) wiedergibt
 def image_generator(folder_path):
     global dirpath,filename
     image_extensions = ('.jpg', '.png', '.jpeg')
@@ -87,11 +87,11 @@ def label_image(model, compressed_image, target_size=(224, 224), top_labels=5):
 # Embeddings in der Pickle gespeichert)
 def save_pickle(embeddings_list,filenames_list,i):
     embeddings_df = pd.DataFrame(embeddings_list, index=filenames_list)
-    
     pickle_filename = 'Pickle_embeddings_test.pkl'
     save_checkpoint(i)  # nur alle 500, weil checkpoint sonst ggf weiter ist als das Speichern 
                         #--> dann würden bis zu 499 Bilder verloren gehen
     if os.path.exists(pickle_filename):
+        # Daten aus der pickle auslesen, und vor das df packen, damit die alten DAten nicht überschrieben werden
         with open(pickle_filename, "rb"):
             existing_data = pd.read_pickle(pickle_filename)
         embeddings_df = pd.concat([existing_data, embeddings_df])
@@ -99,8 +99,8 @@ def save_pickle(embeddings_list,filenames_list,i):
         pd.to_pickle(embeddings_df, pickle_filename)
 
 def main():
-    global i
-    batch_size = 500
+    global i #Um zu sehen, wie weit man schon ist
+    batch_size = 500 #in 500er Schritten speichern
     embeddings_list = []
     filenames_list = []
     data = []
@@ -110,9 +110,10 @@ def main():
     checkpoint = load_checkpoint()
     i = 0
     start = checkpoint + 1 if checkpoint is not None else 0
+    # Generator so lange durch laufen lassen, bis er den Chekpoint erreicht hat, damit nicht jedes mal von vorne angefangen wird
     for i in tqdm(range(0,start)):
         next(generator)
-
+    # Jedes Bild durch die Funktionen schicken
     for image_path in generator:
         try:  
             temp2 = load_and_compress_image(image_path, target_size=(224, 224))
@@ -120,20 +121,22 @@ def main():
             filenames_list.append(image_path)
             embeddings_list.append(embeddings)
             labels = label_image(model, temp2, target_size=(224, 224), top_labels=5)
+            # Die Label werden immer als tupel, bestehend aus dem path//filename und dann abwechselnd die Label und die Werte der Label, gespeichert
             row = [image_path]
             for label in labels:
                 row.append(label[1]) # Das sind die Label Namen, Label[0] ist die cryptische Bezeichnung der Label
                 row.append(label[2]) # Wert des Labels
             data.append(tuple(row))
             i +=1
-            
+        # Fehler aufschreiben und weiter machen
         except Exception as e:
             logging.error(f"Error at point {i}: {e}")
             error_counter = error_counter +1
             continue
+        # Alle 500 iterationen speichern
         if i % batch_size == 0:
             save_pickle(embeddings_list,filenames_list,i)
-            embeddings_list = []
+            embeddings_list = [] # Listen leeren, damit es nicht zu dopplungen kommt
             filenames_list = []
             conn = sqlite3.connect("databases/Big_data_database.db")
             curs = conn.cursor()
@@ -144,14 +147,23 @@ def main():
                              """, data)
             conn.commit()
             conn.close()
-            data = []  # Leeren Sie die Datenliste für die nächste Charge
+            data = []  # Liste leeren, damit es nicht zu dopplungen kommt
             print(i)
     # noch ein mal, sobald der generator durch gelaufen ist
     save_pickle(embeddings_list,filenames_list,i)
     embeddings_list = []
     filenames_list = []
+    conn = sqlite3.connect("databases/Big_data_database.db")
+    curs = conn.cursor()
+    curs.executemany("""
+                     INSERT INTO Labels 
+                     (Pfad, Label1, Label1_Wert, Label2, Label2_Wert, Label3, Label3_Wert, Label4, Label4_Wert, Label5, Label5_Wert)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     """, data)
+    conn.commit()
+    conn.close()
+    data = []
     print(i)
-        
     end_time = time.time() - start_time
     print(f"time: {end_time}   errors: {error_counter}")
         
