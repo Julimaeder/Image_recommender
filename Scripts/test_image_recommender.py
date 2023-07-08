@@ -4,9 +4,9 @@ from Scripts.Color_Scheme import Image_to_rgb_scheme, Get_color_scheme, Full_Pre
 from PIL import Image
 import numpy as np
 import pandas as pd
+path = "../.github/Test_bild/standing-german-shepherd.jpg"
 
 def test_image_recommender():
-    path = "../.github/Test_bild/standing-german-shepherd.jpg"
     #Test Label:
     expected_output_label = 'German_shepherd' #genaue Werte können nur schelcht verglichen werden, da die Berechnungen teils minimal von einander abweichen
     image = load_and_compress_image(path, target_size=(224, 224))
