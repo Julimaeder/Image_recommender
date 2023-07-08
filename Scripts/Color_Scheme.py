@@ -253,21 +253,26 @@ def Distances(image, df1, num_images=5):
 def Full_Prediction(image_path, df):
 
 
-    df= df.drop(['sID', 'iID'], axis=1)
+    df1= df.drop(['sID', 'iID'], axis=1)
     print("Color scheme")
     
     # Open and load all images
     image = Image.open(image_path)
+    print("open scheme")
         
     vectors = Image_to_rgb_scheme(image)
+    print("Image_to_rgb_scheme")
 
     color_scheme, count_scheme = Get_color_scheme(vectors)
+    print("Get_color_scheme")
     rgb_values = np.zeros((6, 6, 6), dtype=int)
     rgb_values[color_scheme[:, 0].astype('int32'), color_scheme[:, 1].astype('int32'), color_scheme[:, 2].astype('int32')] = count_scheme
         
+    print("rgb_values")
     np_i = rgb_values.flatten().astype('int32')
-    color_scheme_distances = Distances(np_i, df)
+    color_scheme_distances = Distances(np_i, df1)
 
+    print("color_scheme_distances")
     smallest_list = []
     for path in color_scheme_distances["path"]:
         smallest_list.append(path)
