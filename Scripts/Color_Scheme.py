@@ -57,6 +57,13 @@ CheckDatabase()
 
 #engine = create_engine('mysql+mysqldb://bigData:Informatiker1@localhost/root', echo = False)
 
+def writeSchemes(df):
+    mydb = sqlite3.connect(sqlPath)
+    mycursor = mydb.cursor()
+    df.to_sql(name='schemes', con=mydb, if_exists='append',index = False, chunksize = 1000)
+    mycursor.close()
+    mydb.close()
+
 def ReadIDbyPath(path):
     mydb = sqlite3.connect(sqlPath)
     mycursor = mydb.cursor()
@@ -256,7 +263,7 @@ def Full_Preperation():
 
             #time6 = time.time()
             # Insert the data into the database
-            df.to_sql(name='schemes', con=mydb, if_exists='append',index = False, chunksize = 1000)
+            writeSchemes(df)
                      
             #print("time: ", time.time()-t)
             #time7 = time.time()   
