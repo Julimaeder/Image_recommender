@@ -10,11 +10,6 @@ import matplotlib.image as mpimg
 import sqlite3
 import time
 import datetime
-<<<<<<< HEAD
-#from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
-=======
->>>>>>> 9c97e86fdc7c5da696e05796625eb5c570b363aa
-#import warnings
 
 #warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
 #warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
@@ -296,10 +291,6 @@ def predictschemes_gen(image):
 
     
 """Code"""
-<<<<<<< HEAD
-=======
-
->>>>>>> 9c97e86fdc7c5da696e05796625eb5c570b363aa
 def Distances(image, df1, num_images=5):
     distances = []
     #nearest_images = []
@@ -337,8 +328,7 @@ def Full_Prediction(image_path):
     #print(type(color_scheme_distances), "\n","\n",color_scheme_distances)
     smallest_list = []
     for path in color_scheme_distances["path"]:
-        smallest_list.append('\\'.join(path.split("\\")[:-1]))
-        smallest_list.append(path.split("\\")[-1])
+        smallest_list.append(path)
     
     return smallest_list
 
