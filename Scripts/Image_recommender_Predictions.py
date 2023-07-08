@@ -9,10 +9,10 @@ import numpy as np
 import pandas as pd
 import pathlib
 import matplotlib.pyplot as plt
-from Scripts.Color_Scheme import Path_generator, Full_Prediction, readAllImages
+from Color_Scheme import Path_generator, Full_Prediction, readAllImages
 filepath = str(pathlib.Path(__file__).parent.resolve())
 os.chdir(filepath)
-from Scripts.Image_recommender_Vorverarbeitung import load_and_compress_image, extract_image_embeddings, label_image, model
+from Image_recommender_Vorverarbeitung import load_and_compress_image, extract_image_embeddings, label_image, model
 
 def find_nearest_images_embeddings(embeddings_image, df1, num_images=5):
     global embeddings2, distances, indices
@@ -170,7 +170,7 @@ def main(image_path):
         color_schemes = Full_Prediction(real_image_path, df)
         embeddings_image = extract_image_embeddings(image)
         nearest_images_embeddings  = find_nearest_images_embeddings(embeddings_image,df1)
-        image_label = real_image_label(real_image_path)
+        image_label = real_image_label(real_image_path,image)
         result_first_1 = label_vergleich(image_label,sql_string_nr = 1)
         result_first_2 = label_vergleich(image_label,sql_string_nr = 2)
         result_first_3 = label_vergleich(image_label,sql_string_nr = 3)
@@ -192,7 +192,7 @@ def main(image_path):
             result_first_1.remove(e)
         nearest_images_label = find_nearest_images_label(result_first_1,result_first_2,result_first_3,result_first_4,result_first_5)
         #Plot Images
-        display_combined_image(nearest_images_embeddings,nearest_images_label,real_image_path)
+        #display_combined_image(nearest_images_embeddings,nearest_images_label,real_image_path)
 
 """
 Da das modell mit dem ImageNet Datensatz trainiert wurde, hat es nur 1000 verschiedene Klassen.
