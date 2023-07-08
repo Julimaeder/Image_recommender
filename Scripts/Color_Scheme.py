@@ -2,18 +2,13 @@ from PIL import Image, ImageFile
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 import os
-import pandas as pd
 import sqlite3
-
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 sqlPath = "./Data/databases/my_database.db"
 imagesPath = "E:\\images\\"
 predictPath = "D:\\Ablage\\predict"
-
-
 
 def CreateDatabase(mydb,mycursor):
     # just execute it if the Database isn't implemented
@@ -29,13 +24,11 @@ def CreateDatabase(mydb,mycursor):
     mycursor.close()
     mydb.close()
     
-
-
 def CheckDatabase():
     mydb = sqlite3.connect(sqlPath)
     mycursor = mydb.cursor()
     # check if the Database is implemented
-    sql_query = f'SELECT name FROM sqlite_master WHERE name="schemes"'
+    sql_query = 'SELECT name FROM sqlite_master WHERE name="schemes"'
     result = pd.read_sql(sql_query, con=mydb)
     if len(result['name']) == 0:
         CreateDatabase(mydb,mycursor)
@@ -66,7 +59,7 @@ def ReadIDbyPath(path):
 def readAllImages():
     mydb = sqlite3.connect(sqlPath)
     mycursor = mydb.cursor()
-    sql_query = f'SELECT * FROM images INNER JOIN schemes ON images.iID = schemes.sID'
+    sql_query = 'SELECT * FROM images INNER JOIN schemes ON images.iID = schemes.sID'
     result = pd.read_sql(sql_query, con=mydb)
     mycursor.close()
     mydb.close()
@@ -74,7 +67,6 @@ def readAllImages():
         return result
     else:
         return None
-
 
 def ReadPathbyID(id):
     mydb = sqlite3.connect(sqlPath)
@@ -92,7 +84,7 @@ def ReadPathbyID(id):
 def ReadALLID():
     mydb = sqlite3.connect(sqlPath)
     mycursor = mydb.cursor()
-    sql_query = f'SELECT iID FROM images'
+    sql_query = 'SELECT iID FROM images'
     result = pd.read_sql(sql_query, con=mydb)
     mycursor.close()
     mydb.close()
@@ -133,7 +125,6 @@ def writeImage(id,path):
     mycursor.close()
     mydb.close()
 
-
 """Preperation"""
 def Path_generator(ipath):
     directory = ipath
@@ -144,17 +135,12 @@ def Path_generator(ipath):
                 # Open the image file
                 yield os.path.join(root, filename)
 
-
 def Get_color_scheme(vectors):
     new_vectors = np.array(vectors)
-    
     u_vectors = new_vectors - (new_vectors % 51)
     unique_vectors, unique_counts = np.unique(u_vectors, axis=0, return_counts=True)
-
     uvs = unique_vectors / 51
-
     return uvs, unique_counts
-
 
 def Image_to_rgb_scheme(image):
     # Convert the image to RGB mode if it's not already in RGB mode
@@ -176,108 +162,56 @@ def Full_Preperation():
     CheckDatabase()
     # Loop through each file in the directory
     image_generator = Path_generator(imagesPath)
-    
-    print("hi")
     maxID = imageMaxID()
     counter = 0
-
     if maxID is None:
         print("all good")
     else:
         counter = int(maxID)
-
     # Open the image file
     for image_path in tqdm(image_generator, total=140395):
-
-
         image_id = ReadIDbyPath(image_path)
         if image_id is None:
             counter += 1
             writeImage(counter, image_path)
             image = Image.open(image_path)
-
             vectors = Image_to_rgb_scheme(image)
-            
             color_scheme, count_scheme = Get_color_scheme(vectors)
-
             rgb_values = np.zeros((6, 6, 6))
             rgb_values[color_scheme[:, 0].astype('int32'), color_scheme[:, 1].astype('int32'), color_scheme[:, 2].astype('int32')] = count_scheme
-            
-            num = rgb_values.flatten().astype('int32')#time4 = time.time()
-            
+            num = rgb_values.flatten().astype('int32')
             values = num.tolist() 
             anzahl_spalten = 216
-
-            #df = pd.DataFrame({'sID': counter})
             cols = ["sID"]+ [f"spalte_{spalten_nr}" for spalten_nr in range(anzahl_spalten)]
             data = [counter] + values
             df = pd.DataFrame(columns=cols)
             df.loc[0] = data
-
             # Insert the data into the database
             writeSchemes(df)
-
-# def predictschemes_gen(image):
-#     vectors = Image_to_rgb_scheme(image)
-#     color_scheme, count_scheme = Get_color_scheme(vectors)
-#     rgb_values = np.zeros((6, 6, 6), dtype=int)
-#     rgb_values[color_scheme[:, 0].astype('int32'), color_scheme[:, 1].astype('int32'), color_scheme[:, 2].astype('int32')] = count_scheme
-        
-#     np_i = rgb_values.flatten().astype('int32').tolist()
-
-#     #print(color_scheme.shape, len(count_scheme))
-#     ids = ReadALLID()
-#     for j in ids:
-#         df_j = ReadSchemesbyID(j)
-#         if df_j is not None:
-#             df_j.values.tolist()
-#             np_j = df_j.iloc[:, 1:].values.tolist()
-#             e = Distances(j, np_i,np_j)
-#             yield j, e 
-
     
 """Code"""
 def Distances(image, df1, num_images=5):
     distances = []
-    print("works")
     for i in tqdm(range(len(df1))):
-        print("works1")
         colors = df1.iloc[i].values[1:]
-        print("works2", colors)
         distance = np.linalg.norm(image - colors)
-        print("works3")
         distances.append(distance)
-    print("works5")
     paths = df1.iloc[:,0].tolist()
-    print("works6")
     df2 = pd.DataFrame({'path': paths,'enum': distances})
-    print("works7")
     nearest_images = df2.nsmallest(num_images, "enum")
-    
     return nearest_images
 
-
 def Full_Prediction(image_path, df):
-
-
     df1= df.drop(['sID', 'iID'], axis=1)
-    
     # Open and load all images
-    image = Image.open(image_path)
-        
+    image = Image.open(image_path)  
     vectors = Image_to_rgb_scheme(image)
-
     color_scheme, count_scheme = Get_color_scheme(vectors)
-    
     rgb_values = np.zeros((6, 6, 6), dtype=int)
     rgb_values[color_scheme[:, 0].astype('int32'), color_scheme[:, 1].astype('int32'), color_scheme[:, 2].astype('int32')] = count_scheme
-        
     np_i = rgb_values.flatten().astype('int32')
     color_scheme_distances = Distances(np_i, df1)
-
-    print("color_scheme_distances")
     smallest_list = []
     for path in color_scheme_distances["path"]:
         smallest_list.append(path)
-    
     return smallest_list
