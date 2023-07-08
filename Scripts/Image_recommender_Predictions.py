@@ -9,10 +9,10 @@ import numpy as np
 import pandas as pd
 import pathlib
 import matplotlib.pyplot as plt
-from Color_Scheme import Path_generator, Full_Prediction, readAllImages
+from Scripts.Color_Scheme import Path_generator, Full_Prediction, readAllImages
 filepath = str(pathlib.Path(__file__).parent.resolve())
 os.chdir(filepath)
-from Image_recommender_Vorverarbeitung import load_and_compress_image, extract_image_embeddings, label_image, model
+from Scripts.Image_recommender_Vorverarbeitung import load_and_compress_image, extract_image_embeddings, label_image, model
 
 def find_nearest_images_embeddings(embeddings_image, df1, num_images=5):
     global embeddings2, distances, indices
