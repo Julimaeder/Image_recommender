@@ -10,7 +10,7 @@
 Image_recommender ist dazu dar um das ähnlichste Bild vorzuschlagen, zu den Bildern, welche vorhergesagt werden sollen.
 Dafür kann eine eigene, oder eine heruntergelade Bildersammlung auf der Festplatte mit dem Buchstaben E verwendet werden.
 Zu den Bildern werden die jeweiligen datenbanken und die pickeldatei benötigt, Diese wurden entweder im vorhinein erstellt, oder mit Image_recommender selbst eingeladen.
-Wenn die die Bildersammlung zu groß ist, aber es wird ein ähnliches Bild benötigt, wie das was vorhanden ist. Dann versuch es mit dem Image recomender zu finden. 
+Wenn dir deine Bildersammlung zu groß ist, du aber ähnliche Bilder zu einem bestimmten Bild benötigst, kannst du Diese mit dem Image recommender finden. 
 
 
 ## Installation
