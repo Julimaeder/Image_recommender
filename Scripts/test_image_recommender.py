@@ -31,7 +31,7 @@ def test_image_recommender():
                         'E:\\images\\weather_image_recognition\\dew\\2.jpg',
                         'E:\\images\\weather_image_recognition\\dew\\3.jpg',
                         'E:\\images\\weather_image_recognition\\dew\\2208.jpg']
-    c = ["iID", "sID"] + [f"spalte_{i}" for i in range(len(input_scheme[0]))]
+    c = ["iID", "sID"] + [f"spalte_{i}" for i in range(len(input_scheme[0])-2)]
     df = pd.DataFrame(input_scheme, columns=c)
     output_paths = Full_Prediction(path, df)
     # image = Image.open(path)
