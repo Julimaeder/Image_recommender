@@ -43,9 +43,6 @@ def CheckDatabase():
     mycursor.close()
     mydb.close()
 
-
-CheckDatabase()
-
 def writeSchemes(df):
     mydb = sqlite3.connect(sqlPath)
     mycursor = mydb.cursor()
@@ -63,6 +60,7 @@ def ReadIDbyPath(path):
     if len(result["iID"]) > 0:
         return int(result["iID"].item())
     else:
+        print("klappt nicht")
         return None
 
 def readAllImages():
@@ -175,6 +173,7 @@ def Image_to_rgb_scheme(image):
     return im
 
 def Full_Preperation():
+    CheckDatabase()
     # Loop through each file in the directory
     image_generator = Path_generator(imagesPath)
     
@@ -218,23 +217,23 @@ def Full_Preperation():
             # Insert the data into the database
             writeSchemes(df)
 
-def predictschemes_gen(image):
-    vectors = Image_to_rgb_scheme(image)
-    color_scheme, count_scheme = Get_color_scheme(vectors)
-    rgb_values = np.zeros((6, 6, 6), dtype=int)
-    rgb_values[color_scheme[:, 0].astype('int32'), color_scheme[:, 1].astype('int32'), color_scheme[:, 2].astype('int32')] = count_scheme
+# def predictschemes_gen(image):
+#     vectors = Image_to_rgb_scheme(image)
+#     color_scheme, count_scheme = Get_color_scheme(vectors)
+#     rgb_values = np.zeros((6, 6, 6), dtype=int)
+#     rgb_values[color_scheme[:, 0].astype('int32'), color_scheme[:, 1].astype('int32'), color_scheme[:, 2].astype('int32')] = count_scheme
         
-    np_i = rgb_values.flatten().astype('int32').tolist()
+#     np_i = rgb_values.flatten().astype('int32').tolist()
 
-    #print(color_scheme.shape, len(count_scheme))
-    ids = ReadALLID()
-    for j in ids:
-        df_j = ReadSchemesbyID(j)
-        if df_j is not None:
-            df_j.values.tolist()
-            np_j = df_j.iloc[:, 1:].values.tolist()
-            e = Distances(j, np_i,np_j)
-            yield j, e 
+#     #print(color_scheme.shape, len(count_scheme))
+#     ids = ReadALLID()
+#     for j in ids:
+#         df_j = ReadSchemesbyID(j)
+#         if df_j is not None:
+#             df_j.values.tolist()
+#             np_j = df_j.iloc[:, 1:].values.tolist()
+#             e = Distances(j, np_i,np_j)
+#             yield j, e 
 
     
 """Code"""
@@ -252,6 +251,7 @@ def Distances(image, df1, num_images=5):
 
 
 def Full_Prediction(image_path, df):
+
 
     df= df.drop(['sID', 'iID'], axis=1)
     print("Color scheme")
