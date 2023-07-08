@@ -1,0 +1,7 @@
+tensorflow
+flake8
+pytest
+pandas
+Pillow
+matplotlib
+tqdm
