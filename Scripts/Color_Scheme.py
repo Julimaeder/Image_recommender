@@ -239,12 +239,19 @@ def Full_Preperation():
 """Code"""
 def Distances(image, df1, num_images=5):
     distances = []
+    print("works")
     for i in tqdm(range(len(df1))):
+        print("works1")
         colors = df1.iloc[i].values[1:]
+        print("works2")
         distance = np.linalg.norm(image - colors)
+        print("works3")
         distances.append(distance)
+    print("works5")
     paths = df1.iloc[:,0].tolist()
+    print("works6")
     df2 = pd.DataFrame({'path': paths,'enum': distances})
+    print("works7")
     nearest_images = df2.nsmallest(num_images, "enum")
     
     return nearest_images
@@ -254,21 +261,17 @@ def Full_Prediction(image_path, df):
 
 
     df1= df.drop(['sID', 'iID'], axis=1)
-    print("Color scheme")
     
     # Open and load all images
     image = Image.open(image_path)
-    print("open scheme")
         
     vectors = Image_to_rgb_scheme(image)
-    print("Image_to_rgb_scheme")
 
     color_scheme, count_scheme = Get_color_scheme(vectors)
-    print("Get_color_scheme")
+    
     rgb_values = np.zeros((6, 6, 6), dtype=int)
     rgb_values[color_scheme[:, 0].astype('int32'), color_scheme[:, 1].astype('int32'), color_scheme[:, 2].astype('int32')] = count_scheme
         
-    print("rgb_values")
     np_i = rgb_values.flatten().astype('int32')
     color_scheme_distances = Distances(np_i, df1)
 
