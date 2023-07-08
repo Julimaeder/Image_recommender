@@ -312,9 +312,8 @@ def Distances(image, df1, num_images=5):
     return nearest_images
 
 
-def Full_Prediction(image_path):
+def Full_Prediction(image_path, df):
 
-    df = readAllImages()
     df= df.drop(['sID', 'iID'], axis=1)
     print("Color scheme")
     

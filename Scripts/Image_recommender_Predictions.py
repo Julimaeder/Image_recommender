@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import pathlib
 import matplotlib.pyplot as plt
-from Scripts.Color_Scheme import Path_generator, Full_Prediction
+from Scripts.Color_Scheme import Path_generator, Full_Prediction, readAllImages
 filepath = str(pathlib.Path(__file__).parent.resolve())
 os.chdir(filepath)
 from Scripts.Image_recommender_Vorverarbeitung import load_and_compress_image, extract_image_embeddings, label_image, model
@@ -160,13 +160,14 @@ def main(image_path):
     global nearest_images_embeddings,image
     df1 = pd.read_pickle("Data\\Pickle_embeddings_test.pkl")
 
+    df = readAllImages()
     image_generator = Path_generator(image_path)
     
     # Open and load all images
     #images = [Image.open(image_path) for image_path in image_paths]
     for real_image_path in image_generator:
         image = load_and_compress_image(real_image_path, target_size=(224, 224))
-        color_schemes = Full_Prediction(real_image_path)
+        color_schemes = Full_Prediction(real_image_path, df)
         embeddings_image = extract_image_embeddings(image)
         nearest_images_embeddings  = find_nearest_images_embeddings(embeddings_image,df1)
         image_label = real_image_label(real_image_path)
