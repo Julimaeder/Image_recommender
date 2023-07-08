@@ -243,7 +243,7 @@ def Distances(image, df1, num_images=5):
     for i in tqdm(range(len(df1))):
         print("works1")
         colors = df1.iloc[i].values[1:]
-        print("works2")
+        print("works2", colors)
         distance = np.linalg.norm(image - colors)
         print("works3")
         distances.append(distance)
