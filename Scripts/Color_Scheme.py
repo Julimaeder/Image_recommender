@@ -6,12 +6,15 @@ import os
 import sqlite3
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
+# Paths die benögtigt werden
 sqlPath = "./Data/databases/my_database.db"
 imagesPath = "E:\\images\\"
 predictPath = "D:\\Ablage\\predict"
 
+
+"""Databases"""
+# Wird nur ausgeführt wenn die Datenbank nicht bereits vorhanden ist
 def CreateDatabase(mydb,mycursor):
-    # just execute it if the Database isn't implemented
     mycursor.execute("CREATE TABLE IF NOT EXISTS images(iID INT PRIMARY KEY NOT NULL, ipath VARCHAR(120) UNIQUE);")
     mydb.commit()
     mycursor.execute("CREATE TABLE IF NOT EXISTS schemes(sID INT PRIMARY KEY, FOREIGN KEY (sID) REFERENCES images(iID));")
@@ -24,10 +27,13 @@ def CreateDatabase(mydb,mycursor):
     mycursor.close()
     mydb.close()
     
+
+# Wenn die Datenbank nicht vorhanden ist wird sie geschreieben.
+# Wenn sie vorhanden ist wird sie verwendet
 def CheckDatabase():
     mydb = sqlite3.connect(sqlPath)
     mycursor = mydb.cursor()
-    # check if the Database is implemented
+    # Fragt ab, ob die Datenbank  implementiert ist
     sql_query = 'SELECT name FROM sqlite_master WHERE name="schemes"'
     result = pd.read_sql(sql_query, con=mydb)
     if len(result['name']) == 0:
@@ -36,6 +42,7 @@ def CheckDatabase():
     mycursor.close()
     mydb.close()
 
+# Hiermit werden die Farbschemen gespeichert
 def writeSchemes(df):
     mydb = sqlite3.connect(sqlPath)
     mycursor = mydb.cursor()
@@ -43,6 +50,7 @@ def writeSchemes(df):
     mycursor.close()
     mydb.close()
 
+# Wir brauchen die ID indem wir den Pfad schon haben 
 def ReadIDbyPath(path):
     mydb = sqlite3.connect(sqlPath)
     mycursor = mydb.cursor()
@@ -56,6 +64,7 @@ def ReadIDbyPath(path):
         print("klappt nicht")
         return None
 
+# Damit werden alle Farbschemen ausgegeben weil diese in 2 verschiedenen Tabellen gespeichert sind
 def readAllImages():
     mydb = sqlite3.connect(sqlPath)
     mycursor = mydb.cursor()
@@ -67,44 +76,8 @@ def readAllImages():
         return result
     else:
         return None
-
-def ReadPathbyID(id):
-    mydb = sqlite3.connect(sqlPath)
-    mycursor = mydb.cursor()
-    sql_query = f'SELECT ipath FROM images where iID="{id}"'
-    result = pd.read_sql(sql_query, con=mydb)
-    print(result)
-    mycursor.close()
-    mydb.close()
-    if len(result["ipath"]) > 0:
-        return result["ipath"].item()
-    else:
-        return None
     
-def ReadALLID():
-    mydb = sqlite3.connect(sqlPath)
-    mycursor = mydb.cursor()
-    sql_query = 'SELECT iID FROM images'
-    result = pd.read_sql(sql_query, con=mydb)
-    mycursor.close()
-    mydb.close()
-    if len(result["iID"]) > 0:
-        return list(result["iID"])
-    else:
-        return None
-    
-def ReadSchemesbyID(id):
-    mydb = sqlite3.connect(sqlPath)
-    mycursor = mydb.cursor()
-    sql_query = f'SELECT * FROM schemes where sID="{id}"'
-    result = pd.read_sql(sql_query, con=mydb)
-    mycursor.close()
-    mydb.close()
-    if len(result['sID']) > 0:
-        return result
-    else:
-        return None
-
+# Die größte ID Zahl wird ausgegeben um nicht jede ID nochmal zu beschreiben oder einzelnd aufzurufen
 def imageMaxID():
     mydb = sqlite3.connect(sqlPath)
     mycursor = mydb.cursor()
@@ -117,6 +90,7 @@ def imageMaxID():
     else:
         return None
 
+# Samit speichern wir unseren Pfad
 def writeImage(id,path):
     mydb = sqlite3.connect(sqlPath)
     mycursor = mydb.cursor()
@@ -126,6 +100,7 @@ def writeImage(id,path):
     mydb.close()
 
 """Preperation"""
+# Jedes Billd an dem ort den wir ausgesucht haben, soll als Pfad ausgegeben werden
 def Path_generator(ipath):
     directory = ipath
     for root, dirs, files in os.walk(directory):
@@ -135,6 +110,7 @@ def Path_generator(ipath):
                 # Open the image file
                 yield os.path.join(root, filename)
 
+# Die Farbschememn werden runtergesampelt
 def Get_color_scheme(vectors):
     new_vectors = np.array(vectors)
     u_vectors = new_vectors - (new_vectors % 51)
@@ -142,11 +118,11 @@ def Get_color_scheme(vectors):
     uvs = unique_vectors / 51
     return uvs, unique_counts
 
+# Die Bilder werden ausgelesen, verkleinert wenn nötig und als numpy array weitergegeben
 def Image_to_rgb_scheme(image):
-    # Convert the image to RGB mode if it's not already in RGB mode
     image = image.convert("RGB")
     size = 300
-    # Get the width and height of the image
+
     width, height = image.size
     if width > size and height > size:
         image = image.resize((size, size))
@@ -158,9 +134,10 @@ def Image_to_rgb_scheme(image):
     im = im3d.reshape(-1, im3d.shape[-1])
     return im
 
+# Das ist die vorbereitung. die bilder im ausgewählten pfad (bei uns F:/Images/), 
+# werden in die datenbank als color scheme datei gespeichert
 def Full_Preperation():
     CheckDatabase()
-    # Loop through each file in the directory
     image_generator = Path_generator(imagesPath)
     maxID = imageMaxID()
     counter = 0
@@ -168,7 +145,7 @@ def Full_Preperation():
         print("all good")
     else:
         counter = int(maxID)
-    # Open the image file
+    # Der loop geht mithilfe vom Generator jedes Bild durch und gibt einen Statusbalken zurück
     for image_path in tqdm(image_generator, total=140395):
         image_id = ReadIDbyPath(image_path)
         if image_id is None:
@@ -190,6 +167,9 @@ def Full_Preperation():
             writeSchemes(df)
     
 """Code"""
+# Die eunclidische Distanz der Farbschememn, von dem Bild was predictet werden soll
+# und allen geladenen Bildern wird berechnet.
+# Die 5 Werte mit der kleinsten Distanz werden ausgegeben
 def Distances(image, df1, num_images=5):
     distances = []
     for i in tqdm(range(len(df1))):
@@ -201,6 +181,8 @@ def Distances(image, df1, num_images=5):
     nearest_images = df2.nsmallest(num_images, "enum")
     return nearest_images
 
+# Das ist der Code der vom main das vom Bild was eingegeben wird die Pfade, 
+# von den ähnlichsten Bildern ausgiebt
 def Full_Prediction(image_path, df):
     df1= df.drop(['sID', 'iID'], axis=1)
     # Open and load all images
