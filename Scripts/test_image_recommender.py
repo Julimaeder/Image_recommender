@@ -47,6 +47,18 @@ def test_image_recommender():
     output_db = len(output_sql)
     conn.close()
     assert output_db == expected_output_db
+
+    conn = sqlite3.connect("./Data/databases/my_database.db")
+    curs = conn.cursor()
+    sql_query = 'SELECT name FROM sqlite_master WHERE name="schemes"'
+    result = pd.read_sql(sql_query, con=conn)
+    if len(result['name']) != 0:
+        assert result['name'].iloc[0] == "schemes"
+    else:
+        assert True
+    output_sql = curs.fetchall()
+    output_db = len(output_sql)
+    conn.close()
     
 test_image_recommender()
 
