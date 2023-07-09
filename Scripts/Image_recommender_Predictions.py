@@ -1,6 +1,3 @@
-"""
-Bitte das Scripts. in Zeile 14 & 15 entfernen, dient nur zu testzwecken.
-"""
 import struct # zum konvertieren von binary zu float beim auslesen der db
 import sqlite3
 import os
@@ -13,8 +10,8 @@ import matplotlib.pyplot as plt
 filepath = str(pathlib.Path(__file__).parent.resolve()) 
 os.chdir(filepath)
 # Funktionen aus den anderen Dateien importieren
-from Scripts.Image_recommender_Vorverarbeitung import load_and_compress_image, extract_image_embeddings, label_image, model
-from Scripts.Color_Scheme import Path_generator, Full_Prediction, readAllImages
+from Image_recommender_Vorverarbeitung import load_and_compress_image, extract_image_embeddings, label_image, model
+from Color_Scheme import Path_generator, Full_Prediction, readAllImages
 
 # Sucht die 5 nächsten embeddings aus dem df zu den imput embeddings von einem Bild
 def find_nearest_images_embeddings(embeddings_image, df1, num_images=5):
